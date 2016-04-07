@@ -1,0 +1,37 @@
+{
+  "name": "cctaxonomies",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "repository": "",
+  "scripts": {
+    "start": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js",
+    "test": "mocha --compilers js:babel-core/register --require ./test/test_helper.js 'test/**/*.js'",
+    "build": "NODE_ENV=production webpack",
+    "test:watch": "npm run test -- --watch"
+  },
+  "author": "",
+  "license": "AGPL",
+  "devDependencies": {
+    "babel-core": "^6.2.1",
+    "babel-loader": "^6.2.0",
+    "babel-preset-es2015": "^6.1.18",
+    "babel-preset-react": "^6.1.18",
+    "babel-preset-stage-1": "^6.1.18",
+    "css-loader": "^0.23.1",
+    "file-loader": "^0.8.5",
+    "react": "^0.14.8",
+    "react-addons-update": "^0.14.8",
+    "react-bootstrap": "^0.28.3",
+    "react-dom": "^0.14.8",
+    "react-select": "^1.0.0-beta11",
+    "style-loader": "^0.13.0",
+    "url-loader": "^0.5.7",
+    "webpack": "^1.12.9",
+    "webpack-dev-server": "^1.14.0"
+  },
+  "dependencies": {
+    "lodash": "^4.6.1",
+    "superagent": "^1.8.3"
+  }
+}
