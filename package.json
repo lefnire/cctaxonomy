@@ -5,10 +5,9 @@
   "main": "index.js",
   "repository": "",
   "scripts": {
-    "start": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js",
-    "test": "mocha --compilers js:babel-core/register --require ./test/test_helper.js 'test/**/*.js'",
-    "build": "NODE_ENV=production webpack",
-    "test:watch": "npm run test -- --watch"
+    "client": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js",
+    "start": "node ./server.js",
+    "build": "NODE_ENV=production webpack"
   },
   "author": "",
   "license": "AGPL",
@@ -34,7 +33,13 @@
     "webpack-dev-server": "^1.14.0"
   },
   "dependencies": {
+    "body-parser": "^1.15.0",
+    "cors": "^2.7.1",
+    "express": "^4.13.4",
     "lodash": "^4.6.1",
+    "nconf": "^0.8.4",
+    "pg": "^4.5.2",
+    "sequelize": "^3.21.0",
     "superagent": "^1.8.3"
   }
 }
