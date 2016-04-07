@@ -1,0 +1,43 @@
+.app {
+  a {
+    cursor: pointer;
+  }
+
+  .cc-breadcrumb:not(:first-child) {
+    margin-left: 10px;
+    &:before {
+      content: '< ';
+    }
+  }
+
+  ul {
+    padding-left: 20px;
+
+    li {
+      list-style: none;
+      margin: 0px;
+
+      .contents {
+        cursor: pointer;
+
+        .name {
+          &.bad { color: red; }
+          &.neutral {}
+          &.good { color: green; }
+        }
+
+        & > * {
+          margin-right: 10px;
+        }
+
+        .actions {
+          display: none;
+        }
+
+        &:hover > .actions {
+          display: inline;
+        }
+      }
+    }
+  }
+}
