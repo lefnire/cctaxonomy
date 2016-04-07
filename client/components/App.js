@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import update from 'react-addons-update';
 import uuid from 'node-uuid';
 import _ from 'lodash';
-import request from 'superagent';
+import Auth, {_fetch} from './Auth';
 import {
   ButtonGroup,
   Button,
@@ -11,9 +11,10 @@ import {
   Glyphicon,
   Input
 } from 'react-bootstrap';
-const SERVER = 'http://localhost:3000';
 
 let app;
+
+const onErr = err => {throw err};
 
 class Row extends Component {
   constructor() {
@@ -28,7 +29,8 @@ class Row extends Component {
   }
 
   score = delta => {
-    request.post(`${SERVER}/node/${this.state.id}/score/${delta}`).end(_.noop);
+    _fetch(`/nodes/${this.state.id}/score/${delta}`, {method: "POST"})
+      .then(app.onAjax).catch(onErr)
     this.setState({score: this.state.score + delta});
   };
 
@@ -42,12 +44,16 @@ class Row extends Component {
       id: uuid.v4(),
       parent: this.props.row
     };
-    request.post(SERVER + '/node')
-      .send(_.assign({}, child, {parent: child.parent.id}))
-      .end((err, res) => {});
-    //this.props.row.children.unshift(child); // master data (later this will be POST)
+    _fetch('/nodes', {
+      method: "POST",
+      body: _.assign({}, child, {parent: child.parent.id})
+    }).then(app.onAjax).catch(onErr);
+
+    // This conflicts with $unshift below. I'd think $unshift'd be the right way, but the added content gets lost during
+    // navigation using that method (where this doesn't). *Shrug*
+    this.props.row.children.unshift(child);
     this.setState(update(this.state, {
-      children: {$unshift: [child]},
+      //children: {$unshift: [child]},
       adding: {$set: ''}
     }));
   };
@@ -126,14 +132,24 @@ export default class App extends Component {
   };
 
   componentWillMount() {
-    request.get(SERVER + '/nodes').end((err, res) => {
-      this.root = this.makeTree(res.body);
+    _fetch('/nodes').then(body => {
+      this.root = this.makeTree(body);
       this.setState({drill: this.root});
-    });
+    }).catch(onErr);
   }
 
   onDrill = row => {
     this.setState({drill: row})
+  };
+
+  // FIXME temporary: refreshing on *anything*
+  onAjax = () => {
+    //_fetch('/nodes').then(body => {
+    //  this.root = this.makeTree(body);
+    //  this.setState({
+    //    drill: _.find(body, {id: this.state.drill.id})
+    //  });
+    //})
   };
 
   render() {
@@ -141,7 +157,7 @@ export default class App extends Component {
       return null;
 
     let drill = this.state.drill;
-    let {name, children, parent, id} = drill;
+    let {parent, id} = drill;
 
     let breadCrumbs = [];
     while(parent) {
@@ -151,12 +167,18 @@ export default class App extends Component {
 
     return (
       <div className="app">
-        {breadCrumbs.map(b => <a className='cc-breadcrumb' onClick={() => this.onDrill(b)}>{b.name}</a>)}
+        <div className="auth">
+          <Auth />
+        </div>
+
+        {breadCrumbs.map(b =>
+          <a key={b.id} className='cc-breadcrumb' onClick={() => this.onDrill(b)}>{b.name}</a>
+        )}
 
         <ul style={{paddingLeft:0}}><Row row={drill} key={drill.id} /></ul>
 
         <div className="downloads">
-          <a href={SERVER + '/download/' + id + '.json'} target="_blank">Download JSON</a>
+          <a href={'/download/' + id + '.json'} target="_blank">Download JSON</a>
         </div>
       </div>
     );

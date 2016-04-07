@@ -6,7 +6,7 @@
   "repository": "",
   "scripts": {
     "client": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js",
-    "start": "node ./server.js",
+    "start": "node ./server/index.js",
     "build": "NODE_ENV=production webpack"
   },
   "author": "",
@@ -37,9 +37,14 @@
     "body-parser": "^1.15.0",
     "cors": "^2.7.1",
     "express": "^4.13.4",
+    "isomorphic-fetch": "^2.2.1",
+    "jsonwebtoken": "^5.7.0",
     "lodash": "^4.6.1",
     "nconf": "^0.8.4",
     "neo4j": "^2.0.0-RC2",
-    "superagent": "^1.8.3"
+    "passport": "^0.3.2",
+    "passport-local-sequelize": "github:lefnire/passport-local-sequelize#master",
+    "pg": "^4.5.2",
+    "sequelize": "^3.21.0"
   }
 }

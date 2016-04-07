@@ -3,7 +3,7 @@ const PROD = process.env.NODE_ENV === 'production';
 
 module.exports = {
   entry: [
-    './src/index.js'
+    './client/index.js'
   ],
   output: {
     path: __dirname,
