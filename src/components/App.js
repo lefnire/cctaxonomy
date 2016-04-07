@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import update from 'react-addons-update';
 import uuid from 'node-uuid';
 import _ from 'lodash';
-import data from '../data';
+import request from 'superagent';
 import {
   ButtonGroup,
   Button,
@@ -11,6 +11,7 @@ import {
   Glyphicon,
   Input
 } from 'react-bootstrap';
+const SERVER = 'http://localhost:3000';
 
 let app;
 
@@ -27,6 +28,7 @@ class Row extends Component {
   }
 
   score = delta => {
+    request.post(`${SERVER}/node/${this.state.id}/score/${delta}`).end(_.noop);
     this.setState({score: this.state.score + delta});
   };
 
@@ -40,7 +42,10 @@ class Row extends Component {
       id: uuid.v4(),
       parent: this.props.row
     };
-    this.props.row.children.unshift(child); // master data (later this will be POST)
+    request.post(SERVER + '/node')
+      .send(_.assign({}, child, {parent: child.parent.id}))
+      .end((err, res) => {});
+    //this.props.row.children.unshift(child); // master data (later this will be POST)
     this.setState(update(this.state, {
       children: {$unshift: [child]},
       adding: {$set: ''}
@@ -62,6 +67,7 @@ class Row extends Component {
       '0': 'neutral',
       '1': 'good'
     }[''+ _.clamp(score, -1, 1)];
+
     return (
       <li>
         <div className="contents">
@@ -111,8 +117,19 @@ export default class App extends Component {
   constructor() {
     super();
     app = this;
-    this.root = data; // keep handle on top for nav'ing back
-    this.state = {drill: data};
+  }
+
+  makeTree = (node, parent) => {
+    _(node).defaults({expanded: true, children: []}).assign({parent}).value();
+    node.children.forEach(child => this.makeTree(child, node));
+    return node;
+  };
+
+  componentWillMount() {
+    request.get(SERVER + '/nodes').end((err, res) => {
+      this.root = this.makeTree(res.body);
+      this.setState({drill: this.root});
+    });
   }
 
   onDrill = row => {
@@ -120,7 +137,11 @@ export default class App extends Component {
   };
 
   render() {
-    let {name, children, parent} = this.state.drill;
+    if (!this.root)
+      return null;
+
+    let drill = this.state.drill;
+    let {name, children, parent, id} = drill;
 
     let breadCrumbs = [];
     while(parent) {
@@ -131,9 +152,11 @@ export default class App extends Component {
     return (
       <div className="app">
         {breadCrumbs.map(b => <a className='cc-breadcrumb' onClick={() => this.onDrill(b)}>{b.name}</a>)}
-        <div>
-          {name}
-          <ul>{children && children.map(r => <Row row={r} key={r.id} />)}</ul>
+
+        <ul style={{paddingLeft:0}}><Row row={drill} key={drill.id} /></ul>
+
+        <div className="downloads">
+          <a href={SERVER + '/download/' + id + '.json'} target="_blank">Download JSON</a>
         </div>
       </div>
     );

@@ -33,13 +33,13 @@
     "webpack-dev-server": "^1.14.0"
   },
   "dependencies": {
+    "async": "^2.0.0-rc.2",
     "body-parser": "^1.15.0",
     "cors": "^2.7.1",
     "express": "^4.13.4",
     "lodash": "^4.6.1",
     "nconf": "^0.8.4",
-    "pg": "^4.5.2",
-    "sequelize": "^3.21.0",
+    "neo4j": "^2.0.0-RC2",
     "superagent": "^1.8.3"
   }
 }
