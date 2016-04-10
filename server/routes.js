@@ -34,17 +34,28 @@ router.post('/', ensureAuth, (req, res, next) => {
 });
 
 router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
-  async.series([
+  let score = +req.params.score,
+    node_id = req.params.id,
+    user_id = req.user.id;
+  async.waterfall([
+    cb => db.Vote.findOne({where: {user_id, node_id}}).then(found => {
+      // Already voted
+      if (found) {
+        if (found.score === score) return cb('ok'); // already voted this direction
+        else if (found.score === 0) found.score = score; // previously cancelled, now let them score
+        else found.score = 0; // Going the other direction. Cancel the vote
+        return found.save().then(() => cb()).catch(cb);
+      }
+      // Haven't scored this node yet
+      db.Vote.create({user_id, node_id, score}).then(() => cb()).catch(cb);
+    }),
     cb => neo.cypher({
       query: `
-        MATCH (p:Node {id: {id}})
+        MATCH (p:Node {id: {node_id}})
         SET p.score = p.score + {score}
         RETURN p
       `,
-      params: {
-        id: req.params.id,
-        score: +req.params.score
-      }
+      params: {score, node_id}
     }, cb),
 
     //FIXME Delete self & children (see http://goo.gl/uND3gA)
@@ -61,8 +72,8 @@ router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
     //    //DELETE r,y,t,n`
     //}, cb),
   ], (err, results) => {
-    if (err) throw err;
-    res.send({});
+    if (err && err !== 'ok') throw err;
+    res.send(results || {});
   });
 });
 

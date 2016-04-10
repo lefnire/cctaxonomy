@@ -31,6 +31,17 @@ passportLocalSequelize.attachToUser(User, {
   //activationRequired: true
 });
 
+// Controls only one vote per person
+let Vote = sequelize.define('votes', {
+  score: {type: Sequelize.INTEGER, allowNull: true, min: -1, max: 1},
+  node_id: Sequelize.UUID
+}, {
+  indexes: [{unique: true, fields: ['node_id', 'user_id']}]
+});
+
+User.hasMany(Vote);
+Vote.belongsTo(User);
+
 sequelize.sync(WIPE? {force: true} : null);
 
 // ------ Neo4j --------
@@ -83,6 +94,7 @@ module.exports = {
   arrToTree,
   defaults,
   User,
+  Vote,
   neo,
   sequelize
 };

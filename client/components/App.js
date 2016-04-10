@@ -30,8 +30,11 @@ class Row extends Component {
 
   score = delta => {
     _fetch(`/nodes/${this.state.id}/score/${delta}`, {method: "POST"})
-      .then(app.onAjax).catch(onErr)
-    this.setState({score: this.state.score + delta});
+      .then(results => {
+        let score = _.get(results, '[0].p.properties.score');
+        if (score !== undefined)
+          this.setState({score});
+      }).catch(onErr)
   };
 
   add = e => {
