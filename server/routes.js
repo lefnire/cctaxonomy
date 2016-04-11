@@ -38,12 +38,13 @@ router.post('/', ensureAuth, (req, res, next) => {
 router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
   let score = +req.params.score,
     node_id = req.params.id,
-    user_id = req.user.id;
+    user_id = req.user.id,
+    deleted;
   async.waterfall([
     cb => db.Vote.findOne({where: {user_id, node_id}}).then(found => {
       // Already voted
       if (found) {
-        if (found.score === score) return cb('ok'); // already voted this direction
+        if (found.score === score && user_id !== 1) return cb('ok'); // already voted this direction
         else if (found.score === 0) found.score = score; // previously cancelled, now let them score
         else found.score = 0; // Going the other direction. Cancel the vote
         return found.save().then(() => cb()).catch(cb);
@@ -60,22 +61,23 @@ router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
       params: {score, node_id}
     }, cb),
 
-    //FIXME Delete self & children (see http://goo.gl/uND3gA)
-    //cb => neo.cypher({
-    //  query:
-    //    `MATCH (p:Node) WHERE p.score < 2
-    //    OPTIONAL MATCH p-[r*]->x
-    //    DELETE r,x`
-    //    //`MATCH n WHERE n.score < 2 WITH n
-    //    //MATCH (n)-[r]-x-[ss*0..]->y
-    //    //WHERE NOT r IN ss
-    //    //OPTIONAL MATCH n-[t]->()
-    //    //FOREACH (s IN ss | DELETE s)
-    //    //DELETE r,y,t,n`
-    //}, cb),
+    // If it's been down=voted to hell, we remove it and all its children
+    (results, cb) => {
+      let score = _.get(results, '[0].p.properties.score');
+      if (score > -5)
+        return cb(null, results);
+      deleted = true;
+      neo.cypher({
+        query: `OPTIONAL MATCH (p:Node {id:{node_id}})-[r*0..]->c DETACH DELETE p, c`,
+        params: {node_id}
+      }, cb)
+    },
   ], (err, results) => {
     if (err && err !== 'ok') return next(err);
-    res.send(results || {});
+    res.send(
+      deleted? {deleted: true}
+      : results || {}
+    );
   });
 });
 

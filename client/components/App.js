@@ -49,6 +49,9 @@ class Row extends Component {
     }
     _fetch(`/nodes/${this.state.id}/score/${delta}`, {method: "POST"})
       .then(results => {
+        if (results && results.deleted) {
+          this.props.onChildDeleted(this.state.id);
+        }
         let score = _.get(results, '[0].p.properties.score');
         if (score !== undefined) {
           this.props.row.score = score; // FIXME: not updating parents
@@ -78,6 +81,15 @@ class Row extends Component {
         adding: ''
       })
     }).catch(onErr);
+  };
+
+  onChildDeleted = id => {
+    let i = _.findIndex(this.state.children, {id});
+    this.props.row.children.splice(i, 1);
+    return this.setState({children: this.props.row.children});
+    //this.setState(update(this.state, {
+    //  children: {$splice: [[i, 1]]}
+    //}));
   };
 
   cancelAdd = () => this.setState({adding: null});
@@ -155,7 +167,12 @@ class Row extends Component {
               </form>
             )}
             {children.map(r =>
-              <Row row={r} key={r.id} ref={c => c && this.childRefs.push(c)} />
+              <Row
+                row={r}
+                key={r.id}
+                ref={c => c && this.childRefs.push(c)}
+                onChildDeleted={this.onChildDeleted}
+              />
             )}
           </ul>
         )}

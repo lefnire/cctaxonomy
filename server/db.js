@@ -61,20 +61,21 @@ const arrToTree = arr => {
   return parent;
 };
 
-async.series([
+if (WIPE) {
+  async.series([
 
-  // Start fresh
-  cb => WIPE? neo.cypher({query: `MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r`}, cb) : cb(),
-  //cb => neo.cypher({
-  //  queries: [
-  //    {query: `CREATE INDEX ON :Node(id)`},
-  //    {query: `CREATE CONSTRAINT ON (node:Node) ASSERT node.id IS UNIQUE`}
-  //  ]
-  //}, cb),
+    // Start fresh
+    cb => neo.cypher({query: `MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r`}, cb),
+    //cb => neo.cypher({
+    //  queries: [
+    //    {query: `CREATE INDEX ON :Node(id)`},
+    //    {query: `CREATE CONSTRAINT ON (node:Node) ASSERT node.id IS UNIQUE`}
+    //  ]
+    //}, cb),
 
-  // Create sample nods
-  cb => neo.cypher({
-    query: `
+    // Create sample nods
+    cb => neo.cypher({
+      query: `
       CREATE (home:Node {name: "Home", ${defaults('home')}})
       WITH home
       CREATE (skills:Node {name: "Skills", parent: home.id, ${defaults()}})<-[:has]-(home)-[:has]->(states:Node {name: "States", parent: home.id, ${defaults()}})
@@ -83,12 +84,13 @@ async.series([
       WITH states
       CREATE(ca:Node {name: "California", parent: states.id, ${defaults()}})<-[:has]-(states)-[:has]->(ut:Node {name: "Utah", parent: states.id, ${defaults()}})
     `,
-    params: {created: +new Date}
-  }, cb),
+      params: {created: +new Date}
+    }, cb),
 
-], (err, results) => {
-  if (err) throw err;
-});
+  ], (err, results) => {
+    if (err) throw err;
+  });
+}
 
 module.exports = {
   arrToTree,
