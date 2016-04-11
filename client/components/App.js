@@ -1,8 +1,10 @@
 import React, {Component} from 'react';
+import ReactDOM from 'react-dom';
 import update from 'react-addons-update';
 import uuid from 'node-uuid';
 import _ from 'lodash';
-import Auth, {_fetch} from './Auth';
+import Auth, {SERVER, _fetch} from './Auth';
+import mousetrap from 'mousetrap';
 import {
   ButtonGroup,
   Button,
@@ -58,6 +60,8 @@ class Row extends Component {
       })
     }).catch(onErr);
   };
+
+  cancelAdd = () => this.setState({adding: null});
 
   onSearch = (search, cb) => {
     if (search === '') {
@@ -126,7 +130,8 @@ class Row extends Component {
                   value={this.state.adding}
                   placeholder="Enter text"
                   onChange={e => this.setState({adding: e.target.value})}
-                  onBlur={e => this.setState({adding: null})}
+                  onBlur={this.cancelAdd}
+                  onKeyDown={e => e.keyCode === 27 && this.cancelAdd()}
                 />
               </form>
             )}
@@ -151,26 +156,40 @@ export default class App extends Component {
       this.root = makeTree(body);
       this.setState({drill: this.root});
     }).catch(onErr);
+    Mousetrap.bind(['esc'], this.focusSearch);
+    Mousetrap.bind(['ctrl+left'], this.goUp);
+    Mousetrap.bind(['ctrl+up'], this.goTop);
+    //Mousetrap.bind(['esc'], this.kbEsc);
   }
+
+  componentWillUnmount() {
+    Mousetrap.unbind(['esc'], this.focusSearch);
+    Mousetrap.unbind(['ctrl+left'], this.goUp);
+    Mousetrap.unbind(['ctrl+up'], this.goTop);
+    //Mousetrap.unbind(['esc'], this.kbEsc);
+  }
+
+  focusSearch = () => {
+    //let dn = ReactDOM.findDOMNode(this.refs.search);
+    let dn = this.refs.search.getInputDOMNode();
+    dn.focus();
+  };
+
+  goUp = () => this.setState({drill: this.state.drill.parent});
+  goTop = () => this.setState({drill: this.root});
+
+  resetSearch = () => {
+    this.setState({search: ''});
+    this.onSearch('');
+  };
+
+  onSearch = search => {
+    this.setState({search});
+    this.refs.row.onSearch(search.toLowerCase(), _.noop);
+  };
 
   onDrill = row => {
     this.setState({drill: row})
-  };
-
-  renderSearch = () => {
-    return (
-      <Input
-        type="text"
-        ref="search"
-        value={this.state.search}
-        placeholder="Search"
-        onChange={e => {
-          let search = e.target.value;
-          this.setState({search});
-          this.refs.row.onSearch(search.toLowerCase(), _.noop);
-        }}
-      />
-    );
   };
 
   render() {
@@ -187,15 +206,31 @@ export default class App extends Component {
     }
 
     return (
-      <div className="app">
-        {this.renderSearch()}
+      <div className="app container-fluid">
+
+        <Input
+          className="search"
+          type="text"
+          ref="search"
+          value={this.state.search}
+          placeholder="Search"
+          onChange={e => this.onSearch(e.target.value)}
+          onKeyDown={e => e.keyCode === 27 && this.resetSearch()}
+        />
 
         <div className="auth">
           <Auth />
         </div>
 
-        {breadCrumbs.map(b =>
-          <a key={b.id} className='cc-breadcrumb' onClick={() => this.onDrill(b)}>{b.name}</a>
+        {breadCrumbs[0] && (
+          <div className="cc-breadcrumbs">
+            {breadCrumbs.map((b,i) =>
+              <span>
+                {i !== 0 && <span> > </span>}
+                <a key={b.id} className='cc-breadcrumb' onClick={() => this.onDrill(b)}>{b.name}</a>
+              </span>
+            )}
+          </div>
         )}
 
         <ul style={{paddingLeft:0}}>
@@ -203,7 +238,7 @@ export default class App extends Component {
         </ul>
 
         <div className="downloads">
-          <a href={'/download/' + id + '.json'} target="_blank">Download JSON</a>
+          <a href={SERVER + '/nodes/download/' + id + '.json'} target="_blank">Download JSON</a>
         </div>
       </div>
     );

@@ -1,20 +1,28 @@
 .app {
+  margin-top: 5px;
+  font-size: 16px;
+
   .auth {
     position: absolute;
     right: 5px;
     top: 5px;
+    z-index: 99;
+    background-color: white;
+    border: 1px solid #eee;
+    padding: 5px;
   }
 
   a {
     cursor: pointer;
   }
 
-  .cc-breadcrumb:not(:first-child) {
-    margin-left: 10px;
-    &:before {
-      content: '< ';
-    }
+  .cc-breadcrumbs {
+    border-bottom: 1px solid #eee;
+    width: 100%;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
   }
+
 
   .downloads {
     position: absolute;
@@ -24,6 +32,7 @@
 
   ul {
     padding-left: 20px;
+    border-left: 1px solid #eee;
 
     li {
       list-style: none;
