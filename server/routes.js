@@ -133,4 +133,25 @@ router.post('/:id/comment', ensureAuth, (req, res, next) => {
   });
 });
 
+router.put('/:id', ensureAuth, (req, res, next) => {
+  if (!req.body.name)
+    return next({code: 400, message: "Name required"});
+  neo.cypher({
+    query: `
+      MATCH (p:Node {id: {id}, user_id: {user_id}})
+      SET p += {name: {name}, description: {description}}
+      RETURN p
+    `,
+    params: {
+      id: req.params.id,
+      user_id: req.user.id,
+      name: req.body.name,
+      description: req.body.description
+    }
+  }, (err, results) => {
+    if (err) return next(err);
+    res.send(results || {});
+  })
+});
+
 module.exports = router;

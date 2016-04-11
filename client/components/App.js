@@ -229,9 +229,26 @@ export default class App extends Component {
     this.setState({drill: hash[this.props.params.nid]});
   };
 
-  comment = () => {
+  comment = e => {
+    e.preventDefault();
     _fetch(`/nodes/${this.state.drill.id}/comment`, {method: "POST", body: {comment: this.state.comment}})
-      .then(res => {debugger})
+      .then(res => {
+        // FIXME
+        location.reload();
+      })
+      .catch(onErr);
+  };
+
+  save = e => {
+    e.preventDefault();
+    _fetch(`/nodes/${this.state.drill.id}`, {method: "PUT", body: {
+      name: this.state.drill.name,
+      description: this.state.drill.description
+    }})
+      .then(res => {
+        // FIXME
+        location.reload();
+      })
       .catch(onErr);
   };
 
@@ -305,17 +322,17 @@ export default class App extends Component {
                   <Input
                     type="text"
                     value={name}
-                    onChange={e => this.setState(this.state, {
-                  drill: {name: {$set: e.target.value}}
-                })}
+                    onChange={e => this.setState(update(this.state, {
+                      drill: {name: {$set: e.target.value}}
+                    }))}
                     placeholder="Name (required)"
                   />
                   <Input
                     type="textarea"
                     value={description}
-                    onChange={e => this.setState(this.state, {
-                  drill: {description: {$set: e.target.value}}
-                })}
+                    onChange={e => this.setState(update(this.state, {
+                      drill: {description: {$set: e.target.value}}
+                    }))}
                     placeholder="Description (optional)"
                   />
                   <Button type="submit">Submit</Button>
