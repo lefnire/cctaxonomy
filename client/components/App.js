@@ -25,8 +25,10 @@ const makeTree = (node, parent) => {
 class Row extends Component {
   constructor() {
     super();
+    this.children = [];
     this.state = {
-      adding: null
+      adding: null,
+      searching: false
     };
   }
 
@@ -57,16 +59,34 @@ class Row extends Component {
     }).catch(onErr);
   };
 
+  onSearch = (search, cb) => {
+    if (search === '') {
+      this.setState({searching: false});
+      return this.childRefs.forEach(c => c.onSearch(search));
+    }
+    let found = !!~this.state.name.toLowerCase().indexOf(search);
+    this.childRefs.forEach(c => c.onSearch(search, _found => {
+      found = found || _found;
+    }));
+    this.setState({found, searching: true});
+    cb(found);
+  };
+
   render() {
-    if (!this.props.row)
-      return null;
+    if (!this.props.row) return null;
+
     let {
       expanded,
       name,
       children,
       score,
-      adding
+      adding,
+      searching,
+      found
     } = this.state;
+
+    this.childRefs = [];
+
     let scoreClass = {
       '-1': 'bad',
       '0': 'neutral',
@@ -74,7 +94,7 @@ class Row extends Component {
     }[''+ _.clamp(score, -1, 1)];
 
     return (
-      <li>
+      <li style={{display: searching && !found ? 'none': 'inline'}}>
         <div className="contents">
 
           <span className="expander">
@@ -110,7 +130,9 @@ class Row extends Component {
                 />
               </form>
             )}
-            {children.map(r => <Row row={r} key={r.id} />)}
+            {children.map(r =>
+              <Row row={r} key={r.id} ref={c => c && this.childRefs.push(c)} />
+            )}
           </ul>
         )}
       </li>
@@ -135,6 +157,22 @@ export default class App extends Component {
     this.setState({drill: row})
   };
 
+  renderSearch = () => {
+    return (
+      <Input
+        type="text"
+        ref="search"
+        value={this.state.search}
+        placeholder="Search"
+        onChange={e => {
+          let search = e.target.value;
+          this.setState({search});
+          this.refs.row.onSearch(search.toLowerCase(), _.noop);
+        }}
+      />
+    );
+  };
+
   render() {
     if (!this.root)
       return null;
@@ -150,6 +188,8 @@ export default class App extends Component {
 
     return (
       <div className="app">
+        {this.renderSearch()}
+
         <div className="auth">
           <Auth />
         </div>
@@ -158,7 +198,9 @@ export default class App extends Component {
           <a key={b.id} className='cc-breadcrumb' onClick={() => this.onDrill(b)}>{b.name}</a>
         )}
 
-        <ul style={{paddingLeft:0}}><Row row={drill} key={drill.id} /></ul>
+        <ul style={{paddingLeft:0}}>
+          <Row row={drill} key={drill.id} ref="row" />
+        </ul>
 
         <div className="downloads">
           <a href={'/download/' + id + '.json'} target="_blank">Download JSON</a>
