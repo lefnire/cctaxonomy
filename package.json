@@ -26,6 +26,7 @@
     "react-addons-update": "^0.14.8",
     "react-bootstrap": "^0.28.3",
     "react-dom": "^0.14.8",
+    "react-router": "^2.1.0",
     "react-select": "^1.0.0-beta11",
     "sass-loader": "^3.2.0",
     "style-loader": "^0.13.0",

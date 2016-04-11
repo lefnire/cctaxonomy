@@ -75,7 +75,7 @@ async.series([
   // Create sample nods
   cb => neo.cypher({
     query: `
-      CREATE (home:Node {name: "Home", ${defaults()}})
+      CREATE (home:Node {name: "Home", ${defaults('home')}})
       WITH home
       CREATE (skills:Node {name: "Skills", parent: home.id, ${defaults()}})<-[:has]-(home)-[:has]->(states:Node {name: "States", parent: home.id, ${defaults()}})
       WITH skills, states

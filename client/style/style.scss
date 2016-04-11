@@ -42,6 +42,8 @@
         cursor: pointer;
 
         .name {
+          color: black;
+
           &.bad { color: red; }
           &.neutral {}
           &.good { color: green; }

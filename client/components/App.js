@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
+import {Link, browserHistory} from 'react-router';
 import update from 'react-addons-update';
 import uuid from 'node-uuid';
 import _ from 'lodash';
@@ -18,9 +19,12 @@ let app;
 
 const onErr = err => {throw err};
 
-const makeTree = (node, parent) => {
+let hash = {};
+
+const xform = (node, parent) => {
   _(node).defaults({expanded: true, children: []}).assign({parent}).value();
-  node.children.forEach(child => makeTree(child, node));
+  hash[node.id] = node;
+  node.children.forEach(child => xform(child, node));
   return node;
 };
 
@@ -42,8 +46,10 @@ class Row extends Component {
     _fetch(`/nodes/${this.state.id}/score/${delta}`, {method: "POST"})
       .then(results => {
         let score = _.get(results, '[0].p.properties.score');
-        if (score !== undefined)
+        if (score !== undefined) {
+          this.props.row.score = score; // FIXME: not updating parents
           this.setState({score});
+        }
       }).catch(onErr)
   };
 
@@ -55,7 +61,7 @@ class Row extends Component {
     };
     _fetch('/nodes', {body, method: "POST"}).then(body => {
       this.setState({
-        children: makeTree(body).children,
+        children: xform(body).children,
         adding: ''
       })
     }).catch(onErr);
@@ -109,7 +115,7 @@ class Row extends Component {
             )}
           </span>
 
-          <span className={'name ' + scoreClass} onClick={() => app.onDrill(this.props.row)}>{name}</span>
+          <Link className={'name ' + scoreClass} to={'/' + this.props.row.id}>{name}</Link>
 
           <span className="actions">
             <span>{score}</span>
@@ -153,8 +159,8 @@ export default class App extends Component {
 
   componentWillMount() {
     _fetch('/nodes').then(body => {
-      this.root = makeTree(body);
-      this.setState({drill: this.root});
+      this.root = xform(body);
+      this.drill();
     }).catch(onErr);
     Mousetrap.bind(['esc'], this.focusSearch);
     Mousetrap.bind(['ctrl+left'], this.goUp);
@@ -175,8 +181,8 @@ export default class App extends Component {
     dn.focus();
   };
 
-  goUp = () => this.setState({drill: this.state.drill.parent});
-  goTop = () => this.setState({drill: this.root});
+  goUp = () => browserHistory.push('/' + this.state.drill.parent.id);
+  goTop = () => browserHistory.push('/home');
 
   resetSearch = () => {
     this.setState({search: ''});
@@ -188,9 +194,14 @@ export default class App extends Component {
     this.refs.row.onSearch(search.toLowerCase(), _.noop);
   };
 
-  onDrill = row => {
-    this.setState({drill: row})
-  };
+  drill = () => {
+    this.setState({drill: hash[this.props.params.nid]});
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.params.nid !== prevProps.params.nid)
+      this.drill()
+  }
 
   render() {
     if (!this.root)
@@ -225,9 +236,9 @@ export default class App extends Component {
         {breadCrumbs[0] && (
           <div className="cc-breadcrumbs">
             {breadCrumbs.map((b,i) =>
-              <span>
+              <span key={b.id}>
                 {i !== 0 && <span> > </span>}
-                <a key={b.id} className='cc-breadcrumb' onClick={() => this.onDrill(b)}>{b.name}</a>
+                <Link className='cc-breadcrumb' to={'/' + b.id}>{b.name}</Link>
               </span>
             )}
           </div>
@@ -236,6 +247,7 @@ export default class App extends Component {
         <ul style={{paddingLeft:0}}>
           <Row row={drill} key={drill.id} ref="row" />
         </ul>
+
 
         <div className="downloads">
           <a href={SERVER + '/nodes/download/' + id + '.json'} target="_blank">Download JSON</a>
