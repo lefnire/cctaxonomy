@@ -46,7 +46,7 @@ sequelize.sync(WIPE? {force: true} : null);
 
 // ------ Neo4j --------
 const neo = new neo4j.GraphDatabase(nconf.get("neo4j"));
-const defaults = id => `id: ${id === true? `{id}` : `"${id || uuid()}"`}, score: 0, created: {created}`
+const defaults = id => `id: ${id === true? `{id}` : `"${id || uuid()}"`}, score: 1, created: {created}`
 
 // FIXME manually constructing a tree, since cypher above is returning a flat list. How to return a tree?
 const arrToTree = arr => {

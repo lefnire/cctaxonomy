@@ -9,7 +9,7 @@ const _ = require('lodash');
 
 router.get('/', (req, res, next) => {
   neo.cypher({
-    query: `MATCH (parent)-[r*]->(child) RETURN parent,r,child`,
+    query: `MATCH (parent)-[r*0..20]->(child) RETURN parent,r,child`,
   }, (err, results) => {
     if (err) return next(err);
     res.json(db.arrToTree(results));
@@ -17,21 +17,32 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', ensureAuth, (req, res, next) => {
-  neo.cypher({
-    query: `
-    MATCH (parent:Node {id:{parent}})
-    WITH parent
-    CREATE (parent)-[:has]->(n:Node {name: {name}, parent: {parent}, ${db.defaults(true)}})
-    WITH parent MATCH (parent)-[r*]->(child)
-    RETURN parent,r,child
-  `,
-    params: _.defaults(req.body, {
-      id: uuid(),
-      created: +new Date,
-    })
-  }, (err, results) => {
+  let user_id = req.user.id,
+    node_id = uuid();
+  async.parallel([
+    cb => db.Vote.create({user_id, node_id, score: 1}).then(() => cb()).catch(cb),
+    cb => neo.cypher({
+      query: `
+      MATCH (parent:Node {id: {parent}})
+      WITH parent
+      CREATE (parent)-[:has]->(n:Node {
+        name: {name},
+        parent: {parent},
+        user_id: {user_id},
+        ${db.defaults(true)}
+      })
+      WITH parent MATCH (parent)-[r*0..]->(child)
+      RETURN parent,r,child
+    `,
+      params: _.defaults(req.body, {
+        id: node_id,
+        created: +new Date,
+        user_id
+      })
+    }, cb)
+  ], (err, results) => {
     if (err) return next(err);
-    res.send(db.arrToTree(results));
+    res.send(db.arrToTree(results[1]));
   })
 });
 
@@ -40,6 +51,9 @@ router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
     node_id = req.params.id,
     user_id = req.user.id,
     deleted;
+  if (node_id === 'home') {
+    return next({code: 400, message: "Nice try."});
+  }
   async.waterfall([
     cb => db.Vote.findOne({where: {user_id, node_id}}).then(found => {
       // Already voted
@@ -83,7 +97,7 @@ router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
 
 router.get('/download/:id.json', (req, res, next) => {
   neo.cypher({
-    query: `OPTIONAL MATCH (parent {id: {id}})-[r*]->(child) RETURN parent,r,child`,
+    query: `MATCH (parent {id: {id}})-[r*0..]->(child) RETURN parent,r,child`,
     params: {id: req.params.id}
   }, (err, results) => {
     if (err) return next(err);

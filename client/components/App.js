@@ -18,8 +18,6 @@ import {
 
 let app;
 
-const onErr = err => {throw err};
-
 let hash = {};
 
 const xform = (node, parent) => {
@@ -57,7 +55,7 @@ class Row extends Component {
           this.props.row.score = score; // FIXME: not updating parents
           this.setState({score});
         }
-      }).catch(onErr)
+      }).catch(error => app.setState({error}))
   };
 
   showInput = () => {
@@ -80,7 +78,7 @@ class Row extends Component {
         children: xformed.children,
         adding: ''
       })
-    }).catch(onErr);
+    }).catch(error => app.setState({error}));
   };
 
   onChildDeleted = id => {
@@ -191,7 +189,7 @@ export default class App extends Component {
     _fetch('/nodes').then(body => {
       this.root = xform(body);
       this.drill();
-    }).catch(onErr);
+    }).catch(error => app.setState({error}));
     Mousetrap.bind(['esc'], this.focusSearch);
     Mousetrap.bind(['ctrl+left'], this.goUp);
     Mousetrap.bind(['ctrl+up'], this.goTop);
