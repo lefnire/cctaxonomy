@@ -16,6 +16,12 @@ let app;
 
 const onErr = err => {throw err};
 
+const makeTree = (node, parent) => {
+  _(node).defaults({expanded: true, children: []}).assign({parent}).value();
+  node.children.forEach(child => makeTree(child, node));
+  return node;
+};
+
 class Row extends Component {
   constructor() {
     super();
@@ -39,26 +45,16 @@ class Row extends Component {
 
   add = e => {
     e.preventDefault();
-    let child = {
+    let body = {
       name: this.state.adding,
-      children: [],
-      expanded: true,
-      score: 0,
-      id: uuid.v4(),
-      parent: this.props.row
+      parent: this.props.row.id
     };
-    _fetch('/nodes', {
-      method: "POST",
-      body: _.assign({}, child, {parent: child.parent.id})
-    }).then(app.onAjax).catch(onErr);
-
-    // This conflicts with $unshift below. I'd think $unshift'd be the right way, but the added content gets lost during
-    // navigation using that method (where this doesn't). *Shrug*
-    this.props.row.children.unshift(child);
-    this.setState(update(this.state, {
-      //children: {$unshift: [child]},
-      adding: {$set: ''}
-    }));
+    _fetch('/nodes', {body, method: "POST"}).then(body => {
+      this.setState({
+        children: makeTree(body).children,
+        adding: ''
+      })
+    }).catch(onErr);
   };
 
   render() {
@@ -128,31 +124,15 @@ export default class App extends Component {
     app = this;
   }
 
-  makeTree = (node, parent) => {
-    _(node).defaults({expanded: true, children: []}).assign({parent}).value();
-    node.children.forEach(child => this.makeTree(child, node));
-    return node;
-  };
-
   componentWillMount() {
     _fetch('/nodes').then(body => {
-      this.root = this.makeTree(body);
+      this.root = makeTree(body);
       this.setState({drill: this.root});
     }).catch(onErr);
   }
 
   onDrill = row => {
     this.setState({drill: row})
-  };
-
-  // FIXME temporary: refreshing on *anything*
-  onAjax = () => {
-    //_fetch('/nodes').then(body => {
-    //  this.root = this.makeTree(body);
-    //  this.setState({
-    //    drill: _.find(body, {id: this.state.drill.id})
-    //  });
-    //})
   };
 
   render() {

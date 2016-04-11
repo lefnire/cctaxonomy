@@ -50,15 +50,15 @@ const defaults = id => `id: ${id === true? `{id}` : `"${id || uuid()}"`}, score:
 
 // FIXME manually constructing a tree, since cypher above is returning a flat list. How to return a tree?
 const arrToTree = arr => {
-  let home = arr[0].home.properties;
-  let nodes = [home].concat(_.map(arr, 'child.properties'));
+  let parent = arr[0].parent.properties;
+  let nodes = [parent].concat(_.map(arr, 'child.properties'));
   nodes = _.uniqBy(nodes, 'id'); // FIXME I'm getting duplicates of nodes, why?
   nodes.forEach(node => {
     let parent = _.find(nodes, {id: node.parent});
     if (parent)
       _.defaults(parent, {children:[]}).children.push(node);
   });
-  return home;
+  return parent;
 };
 
 async.series([
