@@ -10,13 +10,14 @@ import fetch from 'isomorphic-fetch';
 export const SERVER = 'http://localhost:3000'; //"<nconf:urls:server>";
 
 // ----- Helper bits ------
-let jwt;
+let [jwt, uid] = [localStorage.getItem('jwt'), localStorage.getItem('uid')];
 
-export function login(token) {
-  window.localStorage.setItem('jwt', token);
+export function login(body) {
+  [jwt, uid] = [body.token, body.id];
+  localStorage.setItem('jwt', jwt);
+  localStorage.setItem('uid', uid);
   let d = new Date();
   window.localStorage.setItem('expire', d.setDate(d.getDate() + 30)); // expire token in 30d
-  jwt = token;
 }
 
 export function logout() {
@@ -24,16 +25,14 @@ export function logout() {
   window.location = '/';
 }
 
+export let loggedIn = () => !!jwt;
+export let userId = () => +uid;
+
 // Handle initial "still logged in?" check on page load
-
-export function loggedIn() {
-  return !!jwt;
-}
-
-let expire = window.localStorage.getItem('expire');
+let expire = localStorage.getItem('expire');
 if (expire && expire < new Date)
   logout(); // expired, log out
-jwt = window.localStorage.getItem('jwt');
+
 
 export function _fetch(url, opts={}) {
   opts = _.merge({headers: {'Accept': 'application/json', 'Content-Type': 'application/json'}}, opts);
@@ -140,24 +139,26 @@ export default class Auth extends Component {
   }
 
   onLogin = body => {
-    login(body.token);
+    login(body);
     this.setState({loggedIn: true});
     this.props.onLogin && this.props.onLogin();
   };
 
   render() {
     let {show, loggedIn} = this.state;
-    return loggedIn ? <a onClick={logout}>Log Out</a>
-      : !show? <a onClick={() => this.setState({show:true})}>Login / Register</a>
+    return loggedIn ? <a className="btn btn-default" onClick={logout}>Log Out</a>
+      : !show? <a className="btn btn-default" onClick={() => this.setState({show:true})}>Login / Register</a>
       : (
-        <Tabs defaultActiveKey={1} animation={false}>
-          <Tab eventKey={1} title="Login">
-            <Login onLogin={this.onLogin}/>
-          </Tab>
-          <Tab eventKey={2} title="Register">
-            <Register onLogin={this.onLogin} />
-          </Tab>
-        </Tabs>
+        <div className="auth-tabs">
+          <Tabs defaultActiveKey={1} animation={false}>
+            <Tab eventKey={1} title="Login">
+              <Login onLogin={this.onLogin}/>
+            </Tab>
+            <Tab eventKey={2} title="Register">
+              <Register onLogin={this.onLogin} />
+            </Tab>
+          </Tabs>
+        </div>
       );
 
   }

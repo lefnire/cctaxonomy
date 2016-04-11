@@ -7,9 +7,11 @@
     right: 5px;
     top: 5px;
     z-index: 99;
-    background-color: white;
-    border: 1px solid #eee;
-    padding: 5px;
+    .auth-tabs {
+      background-color: white;
+      border: 1px solid #eee;
+      padding: 10px;
+    }
   }
 
   a {
@@ -26,11 +28,11 @@
 
   .downloads {
     position: absolute;
+    top: 5px;
     right: 5px;
-    bottom: 5px;
   }
 
-  ul {
+  ul.nodes {
     padding-left: 20px;
     border-left: 1px solid #eee;
 
@@ -62,5 +64,12 @@
         }
       }
     }
+  }
+
+  ul.suggest-edits {
+    padding-left: 0px;
+    margin-left: 0px;
+    margin-top: 10px;
+    list-style: none;
   }
 }

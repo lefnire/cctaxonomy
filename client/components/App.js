@@ -5,7 +5,7 @@ import {Link, browserHistory} from 'react-router';
 import update from 'react-addons-update';
 import uuid from 'node-uuid';
 import _ from 'lodash';
-import Auth, {SERVER, _fetch, loggedIn} from './Auth';
+import Auth, {SERVER, _fetch, loggedIn, userId} from './Auth';
 import mousetrap from 'mousetrap';
 import {
   ButtonGroup,
@@ -13,7 +13,8 @@ import {
   DropdownButton,
   MenuItem,
   Glyphicon,
-  Input
+  Input,
+  Alert
 } from 'react-bootstrap';
 
 let app;
@@ -149,7 +150,7 @@ class Row extends Component {
         </div>
 
         {expanded && children && (
-          <ul>
+          <ul className="nodes">
             {adding !== null && (
               <form onSubmit={this.add}>
                 <Input
@@ -236,7 +237,8 @@ export default class App extends Component {
       return null;
 
     let drill = this.state.drill;
-    let {parent, id} = drill;
+    let {parent, id, user_id, name, description} = drill;
+    let mine = +user_id === userId();
 
     let breadCrumbs = [];
     while(parent) {
@@ -273,14 +275,83 @@ export default class App extends Component {
           </div>
         )}
 
-        <ul style={{paddingLeft:0}}>
-          <Row row={drill} key={drill.id} ref="row" />
-        </ul>
+        <div className="row">
+          <div className="col-md-6">
+            <ul className="nodes" style={{paddingLeft:0}}>
+              <Row row={drill} key={drill.id} ref="row" />
+            </ul>
+          </div>
 
+          <div className="col-md-6 well">
+            <div className="downloads">
+              <DropdownButton title="Download" id="downloads-dropdown">
+                <MenuItem eventKey="1" href={SERVER + '/nodes/download/' + id + '.json'} target="_blank">JSON</MenuItem>
+                <MenuItem eventKey="2" disabled>CSV</MenuItem>
+                <MenuItem eventKey="2" disabled>YAML</MenuItem>
+              </DropdownButton>
+            </div>
 
-        <div className="downloads">
-          <a href={SERVER + '/nodes/download/' + id + '.json'} target="_blank">Download JSON</a>
+            {mine ? (
+              <div>
+                <form onSubmit={this.save}>
+                  <Input
+                    type="text"
+                    value={name}
+                    onChange={e => this.setState(this.state, {
+                  drill: {name: {$set: e.target.value}}
+                })}
+                    placeholder="Name (required)"
+                  />
+                  <Input
+                    type="textarea"
+                    value={description}
+                    onChange={e => this.setState(this.state, {
+                  drill: {description: {$set: e.target.value}}
+                })}
+                    placeholder="Description (optional)"
+                  />
+                  <Button type="submit">Submit</Button>
+                </form>
+                <hr/>
+              </div>
+            ) : (
+              <div>
+                <h4>{drill.name}</h4>
+                <p>Description: {drill.description || 'N/A'}</p>
+                <ul className="suggest-edits">
+                  {drill.suggestions && drill.suggestions.map(s => <li></li>)}
+                  <li>
+                    {this.state.suggest ? (
+                      <Alert bsStyle="warning">
+                        Edit suggestions not currently supported, express interest here and I'll jump on it.
+                      </Alert>
+                    ) : (
+                      <a onClick={()=> this.setState({suggest: !this.state.suggest})}>Suggest Edits</a>
+                    )}
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            <form onSubmit={this.comment}>
+              <Input
+                type="textarea"
+                value={this.state.comment}
+                onChange={e => this.setState({comment: e.target.value})}
+                placeholder="Comment"
+              />
+              <Button type="submit">Comment</Button>
+            </form>
+            {drill.comments && drill.comments.map(c =>
+              <div>
+                {drill.comment}
+              </div>
+            )}
+
+          </div>
         </div>
+
+        <a href="https://github.com/lefnire/cctaxonomy" target="_blank"><img style={{position: 'absolute', top: 0, left: 0, border: 0}} src="https://camo.githubusercontent.com/c6625ac1f3ee0a12250227cf83ce904423abf351/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_left_gray_6d6d6d.png" /></a>
       </div>
     );
   }

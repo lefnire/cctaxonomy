@@ -22,13 +22,13 @@ exports.setup = function (app) {
     User.register({email: req.body.email}, req.body.password, function (err, _user) {
       if (err) return next({status: 403, message: err.message || err});
       passport.authenticate('local', localOpts)(req, res, () => {
-        res.json({token: sign(_user)});
+        res.json({id: _user.id, token: sign(_user)});
       });
     });
   });
 
   app.post('/login', passport.authenticate('local', localOpts), function(req, res){
-    res.json({token:sign(req.user)});
+    res.json({id: req.user.id, token: sign(req.user)});
   });
 }
 

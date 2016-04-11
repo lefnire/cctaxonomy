@@ -76,7 +76,7 @@ if (WIPE) {
     // Create sample nods
     cb => neo.cypher({
       query: `
-      CREATE (home:Node {name: "Home", ${defaults('home')}})
+      CREATE (home:Node {name: "Home", user_id: 1, ${defaults('home')}})
       WITH home
       CREATE (skills:Node {name: "Skills", parent: home.id, ${defaults()}})<-[:has]-(home)-[:has]->(states:Node {name: "States", parent: home.id, ${defaults()}})
       WITH skills, states
