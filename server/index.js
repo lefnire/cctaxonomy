@@ -16,6 +16,14 @@ app.use(bodyParser.json()); //application/json
 app.use('/nodes', routes);
 require('./passport').setup(app);
 
+// error handler
+app.use((err, req, res, next) => {
+  console.log(err);
+  if (err.name == 'AuthenticationError') // Passport just gives us "Unauthorized", not sure how to get specifics
+    err = {status:401, message: "Login failed, please check email address or password and try again."};
+  res.status(err.status || 500).json({message: err.message || err});
+});
+
 app.listen(nconf.get('PORT'), () => {
   console.log('Example app listening on port 3000!');
 });

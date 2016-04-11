@@ -1,10 +1,11 @@
 import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
+import Error from './Error';
 import {Link, browserHistory} from 'react-router';
 import update from 'react-addons-update';
 import uuid from 'node-uuid';
 import _ from 'lodash';
-import Auth, {SERVER, _fetch} from './Auth';
+import Auth, {SERVER, _fetch, loggedIn} from './Auth';
 import mousetrap from 'mousetrap';
 import {
   ButtonGroup,
@@ -43,6 +44,9 @@ class Row extends Component {
   }
 
   score = delta => {
+    if (!loggedIn()) {
+      return app.setState({error: "You must be logged in to vote"});
+    }
     _fetch(`/nodes/${this.state.id}/score/${delta}`, {method: "POST"})
       .then(results => {
         let score = _.get(results, '[0].p.properties.score');
@@ -53,6 +57,13 @@ class Row extends Component {
       }).catch(onErr)
   };
 
+  showInput = () => {
+    if (!loggedIn()) {
+      return app.setState({error: "You must be logged in to add content."});
+    }
+    this.setState({adding: ''});
+  };
+
   add = e => {
     e.preventDefault();
     let body = {
@@ -60,8 +71,10 @@ class Row extends Component {
       parent: this.props.row.id
     };
     _fetch('/nodes', {body, method: "POST"}).then(body => {
+      let xformed = xform(body);
+      this.props.row.children = xformed.children; // FIXME
       this.setState({
-        children: xform(body).children,
+        children: xformed.children,
         adding: ''
       })
     }).catch(onErr);
@@ -121,7 +134,7 @@ class Row extends Component {
             <span>{score}</span>
             <a onClick={() => this.score(1)}>&#9650;</a>
             <a onClick={() => this.score(-1)}>&#9660;</a>
-            <a onClick={() => this.setState({adding: ''})}>Add Child</a>
+            <a onClick={this.showInput}>Add Child</a>
           </span>
         </div>
 
@@ -218,6 +231,7 @@ export default class App extends Component {
 
     return (
       <div className="app container-fluid">
+        <Error error={this.state.error} />
 
         <Input
           className="search"
@@ -230,7 +244,7 @@ export default class App extends Component {
         />
 
         <div className="auth">
-          <Auth />
+          <Auth onLogin={()=>this.setState({error:null})} />
         </div>
 
         {breadCrumbs[0] && (

@@ -14,10 +14,10 @@ exports.setup = function (app) {
   var localOpts = {session:false, failWithError:true};
   app.post('/register', function (req, res, next) {
     if (req.body.password != req.body.confirmPassword)
-      return next({status:403, message:'Password does not match Confirm Password'});
+      return next({status: 403, message: 'Password does not match Confirm Password'});
 
     if (req.body.password.length < 8)
-      return next({status:403, message:'Password should be at least 8 characters.'});
+      return next({status: 403, message: 'Password should be at least 8 characters.'});
 
     User.register({email: req.body.email}, req.body.password, function (err, _user) {
       if (err) return next({status: 403, message: err.message || err});
@@ -43,11 +43,11 @@ exports.ensureAuth = function (req, res, next) {
   // check header or url parameters or post parameters for token
   var token = /*req.body.token || req.query.token ||*/ req.headers['x-access-token'];
   if (!token)
-    return next({status:403, message: 'No token provided.'});
+    return next({status: 403, message: 'No token provided.'});
   // decode token
   jwt.verify(token, nconf.get('secret'), (err, decoded) => {
     if (err)
-      return next({status:403, message:'Failed to authenticate token.'});
+      return next({status: 403, message: 'Failed to authenticate token.'});
     // if everything is good, save to request for use in other routes. Note we don't do req.user=decoded, since that
     // contains stale data
     User.findById(decoded.id).then(user => {

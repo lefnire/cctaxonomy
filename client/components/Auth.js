@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import Error from './Error';
 import {
   Input,
   Button,
@@ -24,6 +25,10 @@ export function logout() {
 }
 
 // Handle initial "still logged in?" check on page load
+
+export function loggedIn() {
+  return !!jwt;
+}
 
 let expire = window.localStorage.getItem('expire');
 if (expire && expire < new Date)
@@ -60,12 +65,13 @@ class Register extends Component {
   submit = e => {
     e.preventDefault();
     _fetch('/register', {method: 'POST', body: this.state})
-      .then(this.props.onLogin).catch(err => {throw err});
+      .then(this.props.onLogin).catch(error => this.setState({error}));
   };
 
   render() {
     return (
       <form onSubmit={this.submit}>
+        <Error error={this.state.error} />
         <Input
           type="email"
           value={this.state.email}
@@ -99,12 +105,13 @@ class Login extends Component {
   submit = e => {
     e.preventDefault();
     _fetch('/login', {method: "POST", body: this.state})
-      .then(this.props.onLogin).catch(err => {throw err});
+      .then(this.props.onLogin).catch(error => this.setState({error}));
   };
 
   render(){
     return (
       <form onSubmit={this.submit}>
+        <Error error={this.state.error} />
         <Input
           type="email"
           value={this.state.email}
@@ -135,6 +142,7 @@ export default class Auth extends Component {
   onLogin = body => {
     login(body.token);
     this.setState({loggedIn: true});
+    this.props.onLogin && this.props.onLogin();
   };
 
   render() {

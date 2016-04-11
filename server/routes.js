@@ -11,7 +11,7 @@ router.get('/', (req, res, next) => {
   neo.cypher({
     query: `MATCH (parent)-[r*]->(child) RETURN parent,r,child`,
   }, (err, results) => {
-    if (err) throw err;
+    if (err) return next(err);
     res.json(db.arrToTree(results));
   })
 });
@@ -30,7 +30,7 @@ router.post('/', ensureAuth, (req, res, next) => {
       created: +new Date,
     })
   }, (err, results) => {
-    if (err) throw err;
+    if (err) return next(err);
     res.send(db.arrToTree(results));
   })
 });
@@ -74,7 +74,7 @@ router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
     //    //DELETE r,y,t,n`
     //}, cb),
   ], (err, results) => {
-    if (err && err !== 'ok') throw err;
+    if (err && err !== 'ok') return next(err);
     res.send(results || {});
   });
 });
@@ -84,7 +84,7 @@ router.get('/download/:id.json', (req, res, next) => {
     query: `OPTIONAL MATCH (parent {id: {id}})-[r*]->(child) RETURN parent,r,child`,
     params: {id: req.params.id}
   }, (err, results) => {
-    if (err) throw err;
+    if (err) return next(err);
     res.setHeader('Content-disposition', 'attachment; filename=' + results[0].parent.properties.name + '.json');
     res.setHeader('Content-type', 'application/json');
     res.json(db.arrToTree(results));
