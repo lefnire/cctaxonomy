@@ -19,6 +19,8 @@ import {
 
 let app;
 
+const onErr = error => app.setState({error});
+
 let hash = {};
 
 const xform = (node, parent) => {
@@ -56,7 +58,7 @@ class Row extends Component {
           this.props.row.score = score; // FIXME: not updating parents
           this.setState({score});
         }
-      }).catch(error => app.setState({error}))
+      }).catch(onErr)
   };
 
   showInput = () => {
@@ -79,7 +81,7 @@ class Row extends Component {
         children: xformed.children,
         adding: ''
       })
-    }).catch(error => app.setState({error}));
+    }).catch(onErr);
   };
 
   onChildDeleted = id => {
@@ -190,7 +192,7 @@ export default class App extends Component {
     _fetch('/nodes').then(body => {
       this.root = xform(body);
       this.drill();
-    }).catch(error => app.setState({error}));
+    }).catch(onErr);
     Mousetrap.bind(['esc'], this.focusSearch);
     Mousetrap.bind(['ctrl+left'], this.goUp);
     Mousetrap.bind(['ctrl+up'], this.goTop);
@@ -225,7 +227,13 @@ export default class App extends Component {
 
   drill = () => {
     this.setState({drill: hash[this.props.params.nid]});
-  }
+  };
+
+  comment = () => {
+    _fetch(`/nodes/${this.state.drill.id}/comment`, {method: "POST", body: {comment: this.state.comment}})
+      .then(res => {debugger})
+      .catch(onErr);
+  };
 
   componentDidUpdate(prevProps) {
     if (this.props.params.nid !== prevProps.params.nid)
@@ -261,7 +269,7 @@ export default class App extends Component {
         />
 
         <div className="auth">
-          <Auth onLogin={()=>this.setState({error:null})} />
+          <Auth onLogin={() => this.setState({error:null})} />
         </div>
 
         {breadCrumbs[0] && (
@@ -342,10 +350,11 @@ export default class App extends Component {
               />
               <Button type="submit">Comment</Button>
             </form>
+            <br/>
             {drill.comments && drill.comments.map(c =>
-              <div>
-                {drill.comment}
-              </div>
+              <p key={c.id}>
+                <span className="label label-default">User {c.user_id}</span> {c.comment}
+              </p>
             )}
 
           </div>

@@ -55,8 +55,12 @@ const arrToTree = arr => {
   nodes = _.uniqBy(nodes, 'id'); // FIXME I'm getting duplicates of nodes, why?
   nodes.forEach(node => {
     let parent = _.find(nodes, {id: node.parent});
-    if (parent)
-      _.defaults(parent, {children:[]}).children.push(node);
+    if (parent) {
+      if (node.comment)
+        _.defaults(parent, {comments: []}).comments.push(node)
+      else
+        _.defaults(parent, {children:[]}).children.push(node);
+    }
   });
   return parent;
 };

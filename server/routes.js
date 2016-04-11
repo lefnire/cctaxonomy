@@ -25,7 +25,7 @@ router.post('/', ensureAuth, (req, res, next) => {
       query: `
       MATCH (parent:Node {id: {parent}})
       WITH parent
-      CREATE (parent)-[:has]->(n:Node {
+      CREATE (parent)-[:node]->(n:Node {
         name: {name},
         parent: {parent},
         user_id: {user_id},
@@ -82,7 +82,7 @@ router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
         return cb(null, results);
       deleted = true;
       neo.cypher({
-        query: `OPTIONAL MATCH (p:Node {id:{node_id}})-[r*0..]->c DETACH DELETE p, c`,
+        query: `MATCH (p:Node {id:{node_id}})-[r*0..]->c DETACH DELETE p, c`,
         params: {node_id}
       }, cb)
     },
@@ -105,6 +105,32 @@ router.get('/download/:id.json', (req, res, next) => {
     res.setHeader('Content-type', 'application/json');
     res.json(db.arrToTree(results));
   })
+});
+
+router.post('/:id/comment', ensureAuth, (req, res, next) => {
+  neo.cypher({
+    query: `
+      MATCH (p:Node {id: {id}})
+      CREATE (p)-[:comment]->(c:Comment {
+        id: {uuid},
+        parent: {id},
+        user_id: {user_id},
+        comment: {comment},
+        created: {created}
+      })
+     return p, c
+    `,
+    params: {
+      uuid: uuid(),
+      id: req.params.id,
+      user_id: req.user.id,
+      comment: req.body.comment,
+      created: +new Date // this will be used for sorting
+    }
+  }, (err, results) => {
+    if (err) return next(err);
+    res.send(results || {});
+  });
 });
 
 module.exports = router;
