@@ -341,20 +341,37 @@ export default class App extends Component {
               </div>
             ) : (
               <div>
-                <h4>{drill.name}</h4>
-                <p>Description: {drill.description || 'N/A'}</p>
-                <ul className="suggest-edits">
-                  {drill.suggestions && drill.suggestions.map(s => <li></li>)}
-                  <li>
-                    {this.state.suggest ? (
-                      <Alert bsStyle="warning">
-                        Edit suggestions not currently supported, express interest here and I'll jump on it.
-                      </Alert>
-                    ) : (
-                      <a onClick={()=> this.setState({suggest: !this.state.suggest})}>Suggest Edits</a>
-                    )}
-                  </li>
-                </ul>
+                <h4>{drill.id === 'home' ? 'CC-Taxonomy' : name}</h4>
+                <div>{drill.description ? <p>{drill.description}</p>
+                  : drill.id === 'home' ? (
+                    <div>
+                      <p>A project for building lists of things to be used in developer projects (Creative Commons). Think of those times you need data: locations (countries to cities), professional industries and their skills, insurance companies and their plans, etc. Sourcing these data across the internet lands you gobs of CSVs & XLSXs; REST and non-REST APIs (some costing an arm and a leg!); copy-pasta from Wikipedia... it's horrible. They're lists of data in the public domain, c'mon.</p>
+                      <p>
+                        With CC-Taxonomy, anyone can add a list (say "JavaScript Frameworks" and all its children). The community can add items, vote on items (aka relevant / appropriate), comment, and suggest edits. Most importantly, at any time you can download any list's latest in various formats (JSON implemented, CSV & YAML pending).
+                      </p>
+                      <p>If it's something you're interested in, make an appearance - it's <a href="https://github.com/lefnire/cctaxonomy" target="_blank">open source</a>, and could use help!</p>
+                      <hr/>
+                      <p>
+                        <small>Interface inspired by <a href="https://workflowy.com" target="_blank">Workflowy</a>; check them out, they rock.</small>
+                      </p>
+                      <iframe style={{border:'none'}} src="https://ghbtns.com/github-btn.html?user=lefnire&repo=cctaxonomy&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>
+                    </div>
+                  ) : 'Description N/A'
+                }</div>
+                {drill.id !== 'home' && (
+                  <ul className="suggest-edits">
+                    {drill.suggestions && drill.suggestions.map(s => <li></li>)}
+                    <li>
+                      {this.state.suggest ? (
+                        <Alert bsStyle="warning">
+                          "Suggested edits" not currently supported, <a href="https://github.com/lefnire/cctaxonomy/issues/1" target="_blank">express interest here</a>.
+                        </Alert>
+                      ) : (
+                        <a onClick={()=> this.setState({suggest: !this.state.suggest})}>Suggest Edits</a>
+                      )}
+                    </li>
+                  </ul>
+                )}
               </div>
             )}
 
@@ -377,7 +394,7 @@ export default class App extends Component {
           </div>
         </div>
 
-        <a href="https://github.com/lefnire/cctaxonomy" target="_blank"><img style={{position: 'absolute', top: 0, left: 0, border: 0}} src="https://camo.githubusercontent.com/c6625ac1f3ee0a12250227cf83ce904423abf351/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_left_gray_6d6d6d.png" /></a>
+        {/*<a href="https://github.com/lefnire/cctaxonomy" target="_blank"><img style={{position: 'absolute', top: 0, left: 0, border: 0}} src="https://camo.githubusercontent.com/c6625ac1f3ee0a12250227cf83ce904423abf351/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_left_gray_6d6d6d.png" /></a>*/}
       </div>
     );
   }

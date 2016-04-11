@@ -150,6 +150,7 @@ export default class Auth extends Component {
       : !show? <a className="btn btn-default" onClick={() => this.setState({show:true})}>Login / Register</a>
       : (
         <div className="auth-tabs">
+          <a style={{position:'absolute', right: 5, top: 5}} onClick={() => this.setState({show: false})}>&#x2715;</a>
           <Tabs defaultActiveKey={1} animation={false}>
             <Tab eventKey={1} title="Login">
               <Login onLogin={this.onLogin}/>
