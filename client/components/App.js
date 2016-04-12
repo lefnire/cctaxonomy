@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom';
 import Error from './Error';
 import {Link, browserHistory} from 'react-router';
 import update from 'react-addons-update';
-import uuid from 'node-uuid';
 import _ from 'lodash';
 import Auth, {SERVER, _fetch, loggedIn, userId} from './Auth';
 import mousetrap from 'mousetrap';
@@ -25,7 +24,8 @@ let hash = {};
 
 const xform = (node, parent) => {
   _(node).defaults({expanded: true, children: []}).assign({parent}).value();
-  hash[node.uuid] = node;
+  hash[node.id] = node;
+  if (/*!parent*/ node.id === 1) hash['home'] = node;
   node.children.forEach(child => xform(child, node));
   return node;
 };
@@ -48,16 +48,15 @@ class Row extends Component {
     if (!loggedIn()) {
       return app.setState({error: "You must be logged in to vote"});
     }
-    _fetch(`/nodes/${this.state.uuid}/score/${delta}`, {method: "POST"})
-      .then(results => {
-        if (results && results.deleted) {
-          this.props.onChildDeleted(this.state.uuid);
-        }
-        let score = _.get(results, '[0].p.properties.score');
-        if (score !== undefined) {
-          this.props.row.score = score; // FIXME: not updating parents
-          this.setState({score});
-        }
+    _fetch(`/nodes/${this.state.id}/score/${delta}`, {method: "POST"})
+      .then(body => {
+        if (!body)
+          return;
+        if (body.deleted)
+          return this.props.onChildDeleted(this.state.id);
+        let score = body.score;
+        this.props.row.score = score; // FIXME: not updating parents
+        this.setState({score});
       }).catch(onErr)
   };
 
@@ -72,7 +71,7 @@ class Row extends Component {
     e.preventDefault();
     let body = {
       name: this.state.adding,
-      parent: this.props.row.uuid
+      parent: this.props.row.id
     };
     _fetch('/nodes', {body, method: "POST"}).then(body => {
       let xformed = xform(body);
@@ -84,8 +83,8 @@ class Row extends Component {
     }).catch(onErr);
   };
 
-  onChildDeleted = uuid => {
-    let i = _.findIndex(this.state.children, {uuid});
+  onChildDeleted = id => {
+    let i = _.findIndex(this.state.children, {id});
     this.props.row.children.splice(i, 1);
     return this.setState({children: this.props.row.children});
     //this.setState(update(this.state, {
@@ -141,7 +140,7 @@ class Row extends Component {
             )}
           </span>
 
-          <Link className={'name ' + scoreClass} to={'/' + this.props.row.uuid}>{name}</Link>
+          <Link className={'name ' + scoreClass} to={'/' + this.props.row.id}>{name}</Link>
 
           <span className="actions">
             <span>{score}</span>
@@ -170,7 +169,7 @@ class Row extends Component {
             {children.map(r =>
               <Row
                 row={r}
-                key={r.uuid}
+                key={r.id}
                 ref={c => c && this.childRefs.push(c)}
                 onChildDeleted={this.onChildDeleted}
               />
@@ -189,8 +188,8 @@ class Sidebar extends Component {
 
   comment = e => {
     e.preventDefault();
-    let {uuid, comment} = this.state;
-    _fetch(`/nodes/${uuid}/comment`, {method: "POST", body: {comment}})
+    let {id, comment} = this.state;
+    _fetch(`/nodes/${id}/comment`, {method: "POST", body: {comment}})
       .then(res => {
         // FIXME
         location.reload();
@@ -200,8 +199,8 @@ class Sidebar extends Component {
 
   save = e => {
     e.preventDefault();
-    let {uuid, name, description} = this.state;
-    _fetch(`/nodes/${uuid}`, {method: "PUT", body: {name, description}})
+    let {id, name, description} = this.state;
+    _fetch(`/nodes/${id}`, {method: "PUT", body: {name, description}})
       .then(res => {
         // FIXME
         location.reload();
@@ -213,17 +212,17 @@ class Sidebar extends Component {
     if (!this.state)
       return null;
     let {
-      uuid, name, description, user_id, comments, // from row
+      id, name, description, user_id, comments, // from row
       comment, showSuggest // local state
     } = this.state;
     let mine = +user_id === userId();
-    let isHome = uuid === 'home';
+    let isHome = this.props.row === hash['home'];
     let suggestions = []; // TODO
     return (
       <div className="well" style={{position:'relative'}}>
         <div className="downloads">
           <DropdownButton title="Download" id="downloads-dropdown">
-            <MenuItem eventKey="1" href={SERVER + '/nodes/download/' + uuid + '.json'} target="_blank">JSON</MenuItem>
+            <MenuItem eventKey="1" href={SERVER + '/nodes/download/' + id + '.json'} target="_blank">JSON</MenuItem>
             <MenuItem eventKey="2" disabled>CSV</MenuItem>
             <MenuItem eventKey="2" disabled>YAML</MenuItem>
           </DropdownButton>
@@ -295,7 +294,7 @@ class Sidebar extends Component {
         </form>
         <br/>
         {comments && comments.map(c =>
-          <p key={c.uuid}>
+          <p key={c.id}>
             <span className="label label-default">User {c.user_id}</span> {c.comment}
           </p>
         )}
@@ -336,7 +335,7 @@ export default class App extends Component {
     dn.focus();
   };
 
-  goUp = () => browserHistory.push('/' + this.state.drill.parent.uuid);
+  goUp = () => browserHistory.push('/' + this.state.drill.parent.id);
   goTop = () => browserHistory.push('/home');
 
   resetSearch = () => {
@@ -350,12 +349,12 @@ export default class App extends Component {
   };
 
   drill = () => {
-    this.setState({drill: hash[this.props.params.uuid]});
+    this.setState({drill: hash[this.props.params.id]});
   };
 
 
   componentDidUpdate(prevProps) {
-    if (this.props.params.uuid !== prevProps.params.uuid)
+    if (this.props.params.id !== prevProps.params.id)
       this.drill()
   }
 
@@ -391,9 +390,9 @@ export default class App extends Component {
         {breadCrumbs[0] && (
           <div className="cc-breadcrumbs">
             {breadCrumbs.map((b,i) =>
-              <span key={b.uuid}>
+              <span key={b.id}>
                 {i !== 0 && <span> > </span>}
-                <Link className='cc-breadcrumb' to={'/' + b.uuid}>{b.name}</Link>
+                <Link className='cc-breadcrumb' to={'/' + b.id}>{b.name}</Link>
               </span>
             )}
           </div>
@@ -402,12 +401,12 @@ export default class App extends Component {
         <div className="row">
           <div className="col-md-6">
             <ul className="nodes" style={{paddingLeft:0}}>
-              <Row row={drill} key={drill.uuid} ref="row" />
+              <Row row={drill} key={drill.id} ref="row" />
             </ul>
           </div>
 
           <div className="col-md-6">
-            <Sidebar row={drill} key={drill.uuid} />
+            <Sidebar row={drill} key={drill.id} />
           </div>
         </div>
 

@@ -7,7 +7,7 @@ require("!style!css!sass!./style/style.scss");
 
 ReactDOM.render((
   <Router history={browserHistory}>
-    <Route path="/:uuid" component={App} />
+    <Route path="/:id" component={App} />
     <Redirect from="/" to="/home" />
   </Router>
 ), document.querySelector('.container'))

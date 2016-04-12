@@ -52,7 +52,7 @@ exports.ensureAuth = function (req, res, next) {
     // contains stale data
     User.findById(decoded.id).then(user => {
       if (user.score < -10)
-        return next({cod: 403, message: `You've been banned from contributing. Bad!`});
+        return next({code: 403, message: `You've been banned from contributing. Bad!`});
 
       req.user = user;
       next();

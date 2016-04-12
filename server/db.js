@@ -1,7 +1,6 @@
 'use strict';
 const async = require('async');
 const uuid = require('node-uuid').v4;
-const neo4j = require('neo4j');
 const Sequelize = require('sequelize');
 const nconf = require('nconf');
 const _ = require('lodash');
@@ -33,80 +32,57 @@ passportLocalSequelize.attachToUser(User, {
   //activationRequired: true
 });
 
+// http://stackoverflow.com/questions/34125090/reverse-aggregation-inside-of-common-table-expression
+let Node = sequelize.define('nodes', {
+  name: {type: Sequelize.STRING, allowNull: false},
+  description: Sequelize.STRING,
+  score: {type: Sequelize.INTEGER, allowNull: false, defaultValue: 1},
+  deleted: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false}
+});
+Node.hasMany(Node);
+Node.belongsTo(Node);
+User.hasMany(Node);
+Node.belongsTo(User);
+
 // Controls only one vote per person
 let Vote = sequelize.define('votes', {
   score: {type: Sequelize.INTEGER, allowNull: true, min: -1, max: 1},
-  node_id: Sequelize.UUID
 }, {
-  indexes: [{unique: true, fields: ['node_id', 'user_id']}]
+  indexes: [{unique: true, fields: ['id', 'user_id']}]
 });
-
 User.hasMany(Vote);
 Vote.belongsTo(User);
+Node.hasMany(Vote);
+Vote.belongsTo(Node);
 
-sequelize.sync(WIPE? {force: true} : null);
+let Comment = sequelize.define('comments', {
+  comment: Sequelize.TEXT
+});
+Node.hasMany(Comment)
+Comment.belongsTo(Node);
+User.hasMany(Comment);
+Comment.belongsTo(User);
 
-// ------ Neo4j --------
-const neo = new neo4j.GraphDatabase(nconf.get("neo4j"));
-
-
-// FIXME manually constructing a tree, since cypher above is returning a flat list. How to return a tree?
-const arrToTree = arr => {
-  let parent = arr[0].parent.properties;
-  let nodes = [parent].concat(_.map(arr, 'child.properties'));
-  nodes = _.uniqBy(nodes, 'uuid'); // FIXME I'm getting duplicates of nodes, why?
-  nodes.forEach(node => {
-    let parent = _.find(nodes, {uuid: node.parent});
-    if (parent) {
-      if (node.comment) {
-        _.defaults(parent, {comments: []}).comments.push(node)
-        parent.comments.sort((a,b) => b.created - a.created);
-
-      } else {
-        _.defaults(parent, {children:[]}).children.push(node);
-        parent.children.sort((a,b) => b.created - a.created);
-      }
-    }
-  });
-  return parent;
-};
 
 if (WIPE) {
-  const defaults = (_uuid) => `uuid: "${_uuid || uuid()}", score: 10, created: {created}`
-  async.series([
-
-    // Start fresh
-    cb => neo.cypher({query: `MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r`}, cb),
-    //cb => neo.cypher({
-    //  queries: [
-    //    {query: `CREATE INDEX ON :Node(uuid)`},
-    //    {query: `CREATE CONSTRAINT ON (node:Node) ASSERT node.uuid IS UNIQUE`}
-    //  ]
-    //}, cb),
-
-    // Create sample nods
-    cb => neo.cypher({
-      query: `
-      CREATE (home:Node {name: "Home", ${defaults('home')}})
-      WITH home
-      CREATE (skills:Node {name: "Skills", parent: home.uuid, ${defaults()}})<-[:has]-(home)-[:has]->(states:Node {name: "States", parent: home.uuid, ${defaults()}})
-      WITH skills, states
-      CREATE (js:Node {name: "JavaScript", parent: skills.uuid, ${defaults()}})<-[:has]-(skills)-[:has]->(python:Node {name: "Python", parent: skills.uuid, ${defaults()}})
-      WITH states
-      CREATE(ca:Node {name: "California", parent: states.uuid, ${defaults()}})<-[:has]-(states)-[:has]->(ut:Node {name: "Utah", parent: states.uuid, ${defaults()}})
-    `,
-      params: {created: +new Date}
-    }, cb),
-
-  ], (err, results) => {
-    if (err) throw err;
-  });
+  sequelize.sync({force: true}).then(() => Node.create({name: 'Home'}))
+    .then(created => Promise.all([
+      Node.create({name: 'Skills', node_id: created.id}),
+      Node.create({name: 'States', node_id: created.id})
+    ]))
+    .then(res => Promise.all([
+      Node.create({name: 'JavaScript', node_id: res[0].id}),
+      Node.create({name: 'Python', node_id: res[0].id}),
+      Node.create({name: 'CA', node_id: res[1].id}),
+      Node.create({name: 'MA', node_id: res[1].id}),
+    ]))
 }
 
+
 module.exports = {
-  arrToTree,
   User,
   Vote,
-  neo,
+  Comment,
+  Node,
   sequelize
 };
