@@ -182,6 +182,129 @@ class Row extends Component {
   }
 }
 
+class Sidebar extends Component {
+  componentWillMount() {
+    this.setState(this.props.row);
+  }
+
+  comment = e => {
+    e.preventDefault();
+    let {uuid, comment} = this.state;
+    _fetch(`/nodes/${uuid}/comment`, {method: "POST", body: {comment}})
+      .then(res => {
+        // FIXME
+        location.reload();
+      })
+      .catch(onErr);
+  };
+
+  save = e => {
+    e.preventDefault();
+    let {uuid, name, description} = this.state;
+    _fetch(`/nodes/${uuid}`, {method: "PUT", body: {name, description}})
+      .then(res => {
+        // FIXME
+        location.reload();
+      })
+      .catch(onErr);
+  };
+
+  render() {
+    if (!this.state)
+      return null;
+    let {
+      uuid, name, description, user_id, comments, // from row
+      comment, showSuggest // local state
+    } = this.state;
+    let mine = +user_id === userId();
+    let isHome = uuid === 'home';
+    let suggestions = []; // TODO
+    return (
+      <div className="well">
+        <div className="downloads">
+          <DropdownButton title="Download" id="downloads-dropdown">
+            <MenuItem eventKey="1" href={SERVER + '/nodes/download/' + uuid + '.json'} target="_blank">JSON</MenuItem>
+            <MenuItem eventKey="2" disabled>CSV</MenuItem>
+            <MenuItem eventKey="2" disabled>YAML</MenuItem>
+          </DropdownButton>
+        </div>
+
+        {mine ? (
+          <div>
+            <form onSubmit={this.save}>
+              <Input
+                type="text"
+                value={name}
+                onChange={e => this.setState({name: e.target.value})}
+                placeholder="Name (required)"
+              />
+              <Input
+                type="textarea"
+                value={description}
+                onChange={e => this.setState({description: e.target.value})}
+                placeholder="Description (optional)"
+              />
+              <Button type="submit">Submit</Button>
+            </form>
+            <hr/>
+          </div>
+        ) : (
+          <div>
+            <h4>{isHome ? 'CC-Taxonomy' : name}</h4>
+            <div>{description ? <p>{description}</p>
+              : isHome ? (
+                <div>
+                  <p>A project for building lists of things to be used in developer projects (Creative Commons). Think of those times you need data: locations (countries to cities), professional industries and their skills, insurance companies and their plans, etc. Sourcing these data across the internet lands you gobs of CSVs & XLSXs; REST and non-REST APIs (some costing an arm and a leg!); copy-pasta from Wikipedia... it's horrible. They're lists of data in the public domain, c'mon.</p>
+                  <p>
+                    With CC-Taxonomy, anyone can add a list (say "JavaScript Frameworks" and all its children). The community can add items, vote on items (aka relevant / appropriate), comment, and suggest edits. Most importantly, at any time you can download any list's latest in various formats (JSON implemented, CSV & YAML pending).
+                  </p>
+                  <p>If it's something you're interested in, make an appearance - it's <a href="https://github.com/lefnire/cctaxonomy" target="_blank">open source</a>, and could use help!</p>
+                  <hr/>
+                  <p>
+                    <small>Interface inspired by <a href="https://workflowy.com" target="_blank">Workflowy</a>; check them out, they rock.</small>
+                  </p>
+                  <iframe style={{border:'none'}} src="https://ghbtns.com/github-btn.html?user=lefnire&repo=cctaxonomy&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>
+                </div>
+              ) : <p>Description N/A</p>
+            }</div>
+            {isHome && (
+              <ul className="suggest-edits">
+                {suggestions.map(s => <li></li>)}
+                <li>
+                  {showSuggest ? (
+                    <Alert bsStyle="warning">
+                      "Suggested edits" not currently supported, <a href="https://github.com/lefnire/cctaxonomy/issues/1" target="_blank">express interest here</a>.
+                    </Alert>
+                  ) : (
+                    <a onClick={()=> this.setState({suggest: !showSuggest})}>Suggest Edits</a>
+                  )}
+                </li>
+              </ul>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={this.comment}>
+          <Input
+            type="textarea"
+            value={comment}
+            onChange={e => this.setState({comment: e.target.value})}
+            placeholder="Comment"
+          />
+          <Button type="submit">Comment</Button>
+        </form>
+        <br/>
+        {comments && comments.map(c =>
+          <p key={c.uuid}>
+            <span className="label label-default">User {c.user_id}</span> {c.comment}
+          </p>
+        )}
+      </div>
+    );
+
+  }
+}
+
 export default class App extends Component {
   constructor() {
     super();
@@ -230,28 +353,6 @@ export default class App extends Component {
     this.setState({drill: hash[this.props.params.uuid]});
   };
 
-  comment = e => {
-    e.preventDefault();
-    _fetch(`/nodes/${this.state.drill.uuid}/comment`, {method: "POST", body: {comment: this.state.comment}})
-      .then(res => {
-        // FIXME
-        location.reload();
-      })
-      .catch(onErr);
-  };
-
-  save = e => {
-    e.preventDefault();
-    _fetch(`/nodes/${this.state.drill.uuid}`, {method: "PUT", body: {
-      name: this.state.drill.name,
-      description: this.state.drill.description
-    }})
-      .then(res => {
-        // FIXME
-        location.reload();
-      })
-      .catch(onErr);
-  };
 
   componentDidUpdate(prevProps) {
     if (this.props.params.uuid !== prevProps.params.uuid)
@@ -259,11 +360,10 @@ export default class App extends Component {
   }
 
   render() {
-    let drill = this.state.drill;
+    let {drill} = this.state;
     if (!drill) return null;
-    let {parent, uuid, user_id, name, description} = drill;
-    let mine = +user_id === userId();
 
+    let {parent} = drill;
     let breadCrumbs = [];
     while(parent) {
       breadCrumbs.unshift(parent);
@@ -306,90 +406,8 @@ export default class App extends Component {
             </ul>
           </div>
 
-          <div className="col-md-6 well">
-            <div className="downloads">
-              <DropdownButton title="Download" id="downloads-dropdown">
-                <MenuItem eventKey="1" href={SERVER + '/nodes/download/' + uuid + '.json'} target="_blank">JSON</MenuItem>
-                <MenuItem eventKey="2" disabled>CSV</MenuItem>
-                <MenuItem eventKey="2" disabled>YAML</MenuItem>
-              </DropdownButton>
-            </div>
-
-            {mine ? (
-              <div>
-                <form onSubmit={this.save}>
-                  <Input
-                    type="text"
-                    value={name}
-                    onChange={e => this.setState(update(this.state, {
-                      drill: {name: {$set: e.target.value}}
-                    }))}
-                    placeholder="Name (required)"
-                  />
-                  <Input
-                    type="textarea"
-                    value={description}
-                    onChange={e => this.setState(update(this.state, {
-                      drill: {description: {$set: e.target.value}}
-                    }))}
-                    placeholder="Description (optional)"
-                  />
-                  <Button type="submit">Submit</Button>
-                </form>
-                <hr/>
-              </div>
-            ) : (
-              <div>
-                <h4>{drill.uuid === 'home' ? 'CC-Taxonomy' : name}</h4>
-                <div>{drill.description ? <p>{drill.description}</p>
-                  : drill.uuid === 'home' ? (
-                    <div>
-                      <p>A project for building lists of things to be used in developer projects (Creative Commons). Think of those times you need data: locations (countries to cities), professional industries and their skills, insurance companies and their plans, etc. Sourcing these data across the internet lands you gobs of CSVs & XLSXs; REST and non-REST APIs (some costing an arm and a leg!); copy-pasta from Wikipedia... it's horrible. They're lists of data in the public domain, c'mon.</p>
-                      <p>
-                        With CC-Taxonomy, anyone can add a list (say "JavaScript Frameworks" and all its children). The community can add items, vote on items (aka relevant / appropriate), comment, and suggest edits. Most importantly, at any time you can download any list's latest in various formats (JSON implemented, CSV & YAML pending).
-                      </p>
-                      <p>If it's something you're interested in, make an appearance - it's <a href="https://github.com/lefnire/cctaxonomy" target="_blank">open source</a>, and could use help!</p>
-                      <hr/>
-                      <p>
-                        <small>Interface inspired by <a href="https://workflowy.com" target="_blank">Workflowy</a>; check them out, they rock.</small>
-                      </p>
-                      <iframe style={{border:'none'}} src="https://ghbtns.com/github-btn.html?user=lefnire&repo=cctaxonomy&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>
-                    </div>
-                  ) : 'Description N/A'
-                }</div>
-                {drill.uuid !== 'home' && (
-                  <ul className="suggest-edits">
-                    {drill.suggestions && drill.suggestions.map(s => <li></li>)}
-                    <li>
-                      {this.state.suggest ? (
-                        <Alert bsStyle="warning">
-                          "Suggested edits" not currently supported, <a href="https://github.com/lefnire/cctaxonomy/issues/1" target="_blank">express interest here</a>.
-                        </Alert>
-                      ) : (
-                        <a onClick={()=> this.setState({suggest: !this.state.suggest})}>Suggest Edits</a>
-                      )}
-                    </li>
-                  </ul>
-                )}
-              </div>
-            )}
-
-            <form onSubmit={this.comment}>
-              <Input
-                type="textarea"
-                value={this.state.comment}
-                onChange={e => this.setState({comment: e.target.value})}
-                placeholder="Comment"
-              />
-              <Button type="submit">Comment</Button>
-            </form>
-            <br/>
-            {drill.comments && drill.comments.map(c =>
-              <p key={c.uuid}>
-                <span className="label label-default">User {c.user_id}</span> {c.comment}
-              </p>
-            )}
-
+          <div className="col-md-6">
+            <Sidebar row={drill} key={drill.uuid} />
           </div>
         </div>
 

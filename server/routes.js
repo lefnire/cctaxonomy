@@ -135,7 +135,7 @@ router.post('/:uuid/comment', ensureAuth, (req, res, next) => {
       MATCH (p:Node {uuid: {uuid}})
       CREATE (p)-[:comment]->(c:Comment {
         uuid: {cid},
-        parent: {parent},
+        parent: {uuid},
         user_id: {user_id},
         comment: {comment},
         created: {created}
