@@ -25,7 +25,7 @@ let hash = {};
 
 const xform = (node, parent) => {
   _(node).defaults({expanded: true, children: []}).assign({parent}).value();
-  hash[node.id] = node;
+  hash[node.uuid] = node;
   node.children.forEach(child => xform(child, node));
   return node;
 };
@@ -48,10 +48,10 @@ class Row extends Component {
     if (!loggedIn()) {
       return app.setState({error: "You must be logged in to vote"});
     }
-    _fetch(`/nodes/${this.state.id}/score/${delta}`, {method: "POST"})
+    _fetch(`/nodes/${this.state.uuid}/score/${delta}`, {method: "POST"})
       .then(results => {
         if (results && results.deleted) {
-          this.props.onChildDeleted(this.state.id);
+          this.props.onChildDeleted(this.state.uuid);
         }
         let score = _.get(results, '[0].p.properties.score');
         if (score !== undefined) {
@@ -72,7 +72,7 @@ class Row extends Component {
     e.preventDefault();
     let body = {
       name: this.state.adding,
-      parent: this.props.row.id
+      parent: this.props.row.uuid
     };
     _fetch('/nodes', {body, method: "POST"}).then(body => {
       let xformed = xform(body);
@@ -84,8 +84,8 @@ class Row extends Component {
     }).catch(onErr);
   };
 
-  onChildDeleted = id => {
-    let i = _.findIndex(this.state.children, {id});
+  onChildDeleted = uuid => {
+    let i = _.findIndex(this.state.children, {uuid});
     this.props.row.children.splice(i, 1);
     return this.setState({children: this.props.row.children});
     //this.setState(update(this.state, {
@@ -141,7 +141,7 @@ class Row extends Component {
             )}
           </span>
 
-          <Link className={'name ' + scoreClass} to={'/' + this.props.row.id}>{name}</Link>
+          <Link className={'name ' + scoreClass} to={'/' + this.props.row.uuid}>{name}</Link>
 
           <span className="actions">
             <span>{score}</span>
@@ -170,7 +170,7 @@ class Row extends Component {
             {children.map(r =>
               <Row
                 row={r}
-                key={r.id}
+                key={r.uuid}
                 ref={c => c && this.childRefs.push(c)}
                 onChildDeleted={this.onChildDeleted}
               />
@@ -185,6 +185,7 @@ class Row extends Component {
 export default class App extends Component {
   constructor() {
     super();
+    this.state = {};
     app = this;
   }
 
@@ -212,7 +213,7 @@ export default class App extends Component {
     dn.focus();
   };
 
-  goUp = () => browserHistory.push('/' + this.state.drill.parent.id);
+  goUp = () => browserHistory.push('/' + this.state.drill.parent.uuid);
   goTop = () => browserHistory.push('/home');
 
   resetSearch = () => {
@@ -226,12 +227,12 @@ export default class App extends Component {
   };
 
   drill = () => {
-    this.setState({drill: hash[this.props.params.nid]});
+    this.setState({drill: hash[this.props.params.uuid]});
   };
 
   comment = e => {
     e.preventDefault();
-    _fetch(`/nodes/${this.state.drill.id}/comment`, {method: "POST", body: {comment: this.state.comment}})
+    _fetch(`/nodes/${this.state.drill.uuid}/comment`, {method: "POST", body: {comment: this.state.comment}})
       .then(res => {
         // FIXME
         location.reload();
@@ -241,7 +242,7 @@ export default class App extends Component {
 
   save = e => {
     e.preventDefault();
-    _fetch(`/nodes/${this.state.drill.id}`, {method: "PUT", body: {
+    _fetch(`/nodes/${this.state.drill.uuid}`, {method: "PUT", body: {
       name: this.state.drill.name,
       description: this.state.drill.description
     }})
@@ -253,16 +254,14 @@ export default class App extends Component {
   };
 
   componentDidUpdate(prevProps) {
-    if (this.props.params.nid !== prevProps.params.nid)
+    if (this.props.params.uuid !== prevProps.params.uuid)
       this.drill()
   }
 
   render() {
-    if (!this.root)
-      return null;
-
     let drill = this.state.drill;
-    let {parent, id, user_id, name, description} = drill;
+    if (!drill) return null;
+    let {parent, uuid, user_id, name, description} = drill;
     let mine = +user_id === userId();
 
     let breadCrumbs = [];
@@ -292,9 +291,9 @@ export default class App extends Component {
         {breadCrumbs[0] && (
           <div className="cc-breadcrumbs">
             {breadCrumbs.map((b,i) =>
-              <span key={b.id}>
+              <span key={b.uuid}>
                 {i !== 0 && <span> > </span>}
-                <Link className='cc-breadcrumb' to={'/' + b.id}>{b.name}</Link>
+                <Link className='cc-breadcrumb' to={'/' + b.uuid}>{b.name}</Link>
               </span>
             )}
           </div>
@@ -303,14 +302,14 @@ export default class App extends Component {
         <div className="row">
           <div className="col-md-6">
             <ul className="nodes" style={{paddingLeft:0}}>
-              <Row row={drill} key={drill.id} ref="row" />
+              <Row row={drill} key={drill.uuid} ref="row" />
             </ul>
           </div>
 
           <div className="col-md-6 well">
             <div className="downloads">
               <DropdownButton title="Download" id="downloads-dropdown">
-                <MenuItem eventKey="1" href={SERVER + '/nodes/download/' + id + '.json'} target="_blank">JSON</MenuItem>
+                <MenuItem eventKey="1" href={SERVER + '/nodes/download/' + uuid + '.json'} target="_blank">JSON</MenuItem>
                 <MenuItem eventKey="2" disabled>CSV</MenuItem>
                 <MenuItem eventKey="2" disabled>YAML</MenuItem>
               </DropdownButton>
@@ -341,9 +340,9 @@ export default class App extends Component {
               </div>
             ) : (
               <div>
-                <h4>{drill.id === 'home' ? 'CC-Taxonomy' : name}</h4>
+                <h4>{drill.uuid === 'home' ? 'CC-Taxonomy' : name}</h4>
                 <div>{drill.description ? <p>{drill.description}</p>
-                  : drill.id === 'home' ? (
+                  : drill.uuid === 'home' ? (
                     <div>
                       <p>A project for building lists of things to be used in developer projects (Creative Commons). Think of those times you need data: locations (countries to cities), professional industries and their skills, insurance companies and their plans, etc. Sourcing these data across the internet lands you gobs of CSVs & XLSXs; REST and non-REST APIs (some costing an arm and a leg!); copy-pasta from Wikipedia... it's horrible. They're lists of data in the public domain, c'mon.</p>
                       <p>
@@ -358,7 +357,7 @@ export default class App extends Component {
                     </div>
                   ) : 'Description N/A'
                 }</div>
-                {drill.id !== 'home' && (
+                {drill.uuid !== 'home' && (
                   <ul className="suggest-edits">
                     {drill.suggestions && drill.suggestions.map(s => <li></li>)}
                     <li>
@@ -386,7 +385,7 @@ export default class App extends Component {
             </form>
             <br/>
             {drill.comments && drill.comments.map(c =>
-              <p key={c.id}>
+              <p key={c.uuid}>
                 <span className="label label-default">User {c.user_id}</span> {c.comment}
               </p>
             )}

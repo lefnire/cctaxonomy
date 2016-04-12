@@ -30,7 +30,7 @@ router.post('/', ensureAuth, (req, res, next) => {
     // Make sure not to create same name on same level
     cb => neo.cypher({
       query: `
-        MATCH (parent:Node {id: {parent}})-[r]->(child:Node)
+        MATCH (parent:Node {uuid: {parent}})-[r]->(child:Node)
         WHERE child.name =~ {regex}
         RETURN child`,
       params: {parent, regex: '(?i)' + name}
@@ -46,24 +46,20 @@ router.post('/', ensureAuth, (req, res, next) => {
       cb => db.Vote.create({user_id, node_id, score: 1}).then(() => cb()).catch(cb),
       cb => neo.cypher({
         query: `
-          MATCH (parent:Node {id: {parent}})
+          MATCH (parent:Node {uuid: {parent}})
           WITH parent
           CREATE (parent)-[:node]->(n:Node {
             name: {name},
             parent: {parent},
             user_id: {user_id},
-            ${db.defaults(true)}
+            uuid: {uuid},
+            score: 1,
+            created: {created}
           })
           WITH parent MATCH (parent)-[r*0..]->(child)
           RETURN parent,r,child
         `,
-        params: {
-          id: node_id,
-          created: +new Date,
-          user_id,
-          parent,
-          name
-        }
+        params: {parent, name, user_id, uuid: uuid(), created: +new Date}
       }, cb)
     ])
   ], (err, results) => {
@@ -72,9 +68,9 @@ router.post('/', ensureAuth, (req, res, next) => {
   })
 });
 
-router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
+router.post('/:uuid/score/:score', ensureAuth, (req, res, next) => {
   let score = +req.params.score,
-    node_id = req.params.id,
+    node_id = req.params.uuid,
     user_id = req.user.id,
     deleted;
   if (node_id === 'home') {
@@ -94,7 +90,7 @@ router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
     }),
     cb => neo.cypher({
       query: `
-        MATCH (p:Node {id: {node_id}})
+        MATCH (p:Node {uuid: {node_id}})
         SET p.score = p.score + {score}
         RETURN p
       `,
@@ -108,7 +104,7 @@ router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
         return cb(null, results);
       deleted = true;
       neo.cypher({
-        query: `MATCH (p:Node {id:{node_id}})-[r*0..]->c DETACH DELETE p, c`,
+        query: `MATCH (p:Node {uuid:{node_id}})-[r*0..]->c DETACH DELETE p, c`,
         params: {node_id}
       }, cb)
     },
@@ -121,10 +117,10 @@ router.post('/:id/score/:score', ensureAuth, (req, res, next) => {
   });
 });
 
-router.get('/download/:id.json', (req, res, next) => {
+router.get('/download/:uuid.json', (req, res, next) => {
   neo.cypher({
-    query: `MATCH (parent {id: {id}})-[r*0..]->(child) RETURN parent,r,child`,
-    params: {id: req.params.id}
+    query: `MATCH (parent {uuid: {uuid}})-[r*0..]->(child) RETURN parent,r,child`,
+    params: {uuid: req.params.uuid}
   }, (err, results) => {
     if (err) return next(err);
     res.setHeader('Content-disposition', 'attachment; filename=' + results[0].parent.properties.name + '.json');
@@ -133,13 +129,13 @@ router.get('/download/:id.json', (req, res, next) => {
   })
 });
 
-router.post('/:id/comment', ensureAuth, (req, res, next) => {
+router.post('/:uuid/comment', ensureAuth, (req, res, next) => {
   neo.cypher({
     query: `
-      MATCH (p:Node {id: {id}})
+      MATCH (p:Node {uuid: {uuid}})
       CREATE (p)-[:comment]->(c:Comment {
-        id: {uuid},
-        parent: {id},
+        uuid: {cid},
+        parent: {parent},
         user_id: {user_id},
         comment: {comment},
         created: {created}
@@ -147,8 +143,8 @@ router.post('/:id/comment', ensureAuth, (req, res, next) => {
      return p, c
     `,
     params: {
-      uuid: uuid(),
-      id: req.params.id,
+      cid: uuid(),
+      uuid: req.params.uuid,
       user_id: req.user.id,
       comment: req.body.comment,
       created: +new Date // this will be used for sorting
@@ -159,17 +155,17 @@ router.post('/:id/comment', ensureAuth, (req, res, next) => {
   });
 });
 
-router.put('/:id', ensureAuth, (req, res, next) => {
+router.put('/:uuid', ensureAuth, (req, res, next) => {
   if (!req.body.name)
     return next({code: 400, message: "Name required"});
   neo.cypher({
     query: `
-      MATCH (p:Node {id: {id}, user_id: {user_id}})
+      MATCH (p:Node {uuid: {uuid}, user_id: {user_id}})
       SET p += {name: {name}, description: {description}}
       RETURN p
     `,
     params: {
-      id: req.params.id,
+      uuid: req.params.uuid,
       user_id: req.user.id,
       name: req.body.name,
       description: req.body.description

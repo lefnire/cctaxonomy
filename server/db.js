@@ -46,15 +46,15 @@ sequelize.sync(WIPE? {force: true} : null);
 
 // ------ Neo4j --------
 const neo = new neo4j.GraphDatabase(nconf.get("neo4j"));
-const defaults = id => `id: ${id === true? `{id}` : `"${id || uuid()}"`}, score: 1, created: {created}`
+
 
 // FIXME manually constructing a tree, since cypher above is returning a flat list. How to return a tree?
 const arrToTree = arr => {
   let parent = arr[0].parent.properties;
   let nodes = [parent].concat(_.map(arr, 'child.properties'));
-  nodes = _.uniqBy(nodes, 'id'); // FIXME I'm getting duplicates of nodes, why?
+  nodes = _.uniqBy(nodes, 'uuid'); // FIXME I'm getting duplicates of nodes, why?
   nodes.forEach(node => {
-    let parent = _.find(nodes, {id: node.parent});
+    let parent = _.find(nodes, {uuid: node.parent});
     if (parent) {
       if (node.comment) {
         _.defaults(parent, {comments: []}).comments.push(node)
@@ -70,27 +70,28 @@ const arrToTree = arr => {
 };
 
 if (WIPE) {
+  const defaults = (_uuid) => `uuid: "${_uuid || uuid()}", score: 1, created: {created}`
   async.series([
 
     // Start fresh
     cb => neo.cypher({query: `MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r`}, cb),
     //cb => neo.cypher({
     //  queries: [
-    //    {query: `CREATE INDEX ON :Node(id)`},
-    //    {query: `CREATE CONSTRAINT ON (node:Node) ASSERT node.id IS UNIQUE`}
+    //    {query: `CREATE INDEX ON :Node(uuid)`},
+    //    {query: `CREATE CONSTRAINT ON (node:Node) ASSERT node.uuid IS UNIQUE`}
     //  ]
     //}, cb),
 
     // Create sample nods
     cb => neo.cypher({
       query: `
-      CREATE (home:Node {name: "Home", user_id: 1, ${defaults('home')}})
+      CREATE (home:Node {name: "Home", ${defaults('home')}})
       WITH home
-      CREATE (skills:Node {name: "Skills", parent: home.id, ${defaults()}})<-[:has]-(home)-[:has]->(states:Node {name: "States", parent: home.id, ${defaults()}})
+      CREATE (skills:Node {name: "Skills", parent: home.uuid, ${defaults()}})<-[:has]-(home)-[:has]->(states:Node {name: "States", parent: home.uuid, ${defaults()}})
       WITH skills, states
-      CREATE (js:Node {name: "JavaScript", parent: skills.id, ${defaults()}})<-[:has]-(skills)-[:has]->(python:Node {name: "Python", parent: skills.id, ${defaults()}})
+      CREATE (js:Node {name: "JavaScript", parent: skills.uuid, ${defaults()}})<-[:has]-(skills)-[:has]->(python:Node {name: "Python", parent: skills.uuid, ${defaults()}})
       WITH states
-      CREATE(ca:Node {name: "California", parent: states.id, ${defaults()}})<-[:has]-(states)-[:has]->(ut:Node {name: "Utah", parent: states.id, ${defaults()}})
+      CREATE(ca:Node {name: "California", parent: states.uuid, ${defaults()}})<-[:has]-(states)-[:has]->(ut:Node {name: "Utah", parent: states.uuid, ${defaults()}})
     `,
       params: {created: +new Date}
     }, cb),
@@ -102,7 +103,6 @@ if (WIPE) {
 
 module.exports = {
   arrToTree,
-  defaults,
   User,
   Vote,
   neo,
