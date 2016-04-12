@@ -18,28 +18,54 @@ router.get('/', (req, res, next) => {
 
 router.post('/', ensureAuth, (req, res, next) => {
   let user_id = req.user.id,
-    node_id = uuid();
-  async.parallel([
-    cb => db.Vote.create({user_id, node_id, score: 1}).then(() => cb()).catch(cb),
+    node_id = uuid(),
+    parent = req.body.parent,
+    name = req.body.name;
+
+  if (_.isEmpty(name))
+    return next({code: 400, message: 'Name cannot be empty'});
+
+  async.waterfall([
+
+    // Make sure not to create same name on same level
     cb => neo.cypher({
       query: `
-      MATCH (parent:Node {id: {parent}})
-      WITH parent
-      CREATE (parent)-[:node]->(n:Node {
-        name: {name},
-        parent: {parent},
-        user_id: {user_id},
-        ${db.defaults(true)}
-      })
-      WITH parent MATCH (parent)-[r*0..]->(child)
-      RETURN parent,r,child
-    `,
-      params: _.defaults(req.body, {
-        id: node_id,
-        created: +new Date,
-        user_id
-      })
-    }, cb)
+        MATCH (parent:Node {id: {parent}})-[r]->(child:Node)
+        WHERE child.name =~ {regex}
+        RETURN child`,
+      params: {parent, regex: '(?i)' + name}
+    }, cb),
+
+    (results, cb) => {
+      if (results[0])
+        return cb({code:400, message: 'Node already exists with that name at this level'});
+      cb();
+    } ,
+
+    async.apply(async.parallel, [
+      cb => db.Vote.create({user_id, node_id, score: 1}).then(() => cb()).catch(cb),
+      cb => neo.cypher({
+        query: `
+          MATCH (parent:Node {id: {parent}})
+          WITH parent
+          CREATE (parent)-[:node]->(n:Node {
+            name: {name},
+            parent: {parent},
+            user_id: {user_id},
+            ${db.defaults(true)}
+          })
+          WITH parent MATCH (parent)-[r*0..]->(child)
+          RETURN parent,r,child
+        `,
+        params: {
+          id: node_id,
+          created: +new Date,
+          user_id,
+          parent,
+          name
+        }
+      }, cb)
+    ])
   ], (err, results) => {
     if (err) return next(err);
     res.send(db.arrToTree(results[1]));

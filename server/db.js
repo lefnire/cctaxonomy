@@ -56,10 +56,14 @@ const arrToTree = arr => {
   nodes.forEach(node => {
     let parent = _.find(nodes, {id: node.parent});
     if (parent) {
-      if (node.comment)
+      if (node.comment) {
         _.defaults(parent, {comments: []}).comments.push(node)
-      else
+        parent.comments.sort((a,b) => b.created - a.created);
+
+      } else {
         _.defaults(parent, {children:[]}).children.push(node);
+        parent.children.sort((a,b) => b.created - a.created);
+      }
     }
   });
   return parent;
