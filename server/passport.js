@@ -51,6 +51,9 @@ exports.ensureAuth = function (req, res, next) {
     // if everything is good, save to request for use in other routes. Note we don't do req.user=decoded, since that
     // contains stale data
     User.findById(decoded.id).then(user => {
+      if (user.score < -10)
+        return next({cod: 403, message: `You've been banned from contributing. Bad!`});
+
       req.user = user;
       next();
     });

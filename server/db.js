@@ -24,6 +24,8 @@ let defaultUserSchema = passportLocalSequelize.defaultUserSchema;
 delete defaultUserSchema.username;
 let User = sequelize.define('users', _.defaults({
   email: {type:Sequelize.STRING, validate:{ isEmail:true }, unique:true, allowNull:false},
+  // If user content gets downvoted all the time, they're banned
+  score: {type: Sequelize.INTEGER, allowNull: false, defaultValue: 1}
 }, defaultUserSchema));
 passportLocalSequelize.attachToUser(User, {
   usernameField: 'email',
@@ -70,7 +72,7 @@ const arrToTree = arr => {
 };
 
 if (WIPE) {
-  const defaults = (_uuid) => `uuid: "${_uuid || uuid()}", score: 1, created: {created}`
+  const defaults = (_uuid) => `uuid: "${_uuid || uuid()}", score: 10, created: {created}`
   async.series([
 
     // Start fresh

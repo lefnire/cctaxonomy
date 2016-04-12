@@ -220,7 +220,7 @@ class Sidebar extends Component {
     let isHome = uuid === 'home';
     let suggestions = []; // TODO
     return (
-      <div className="well">
+      <div className="well" style={{position:'relative'}}>
         <div className="downloads">
           <DropdownButton title="Download" id="downloads-dropdown">
             <MenuItem eventKey="1" href={SERVER + '/nodes/download/' + uuid + '.json'} target="_blank">JSON</MenuItem>
@@ -267,7 +267,7 @@ class Sidebar extends Component {
                 </div>
               ) : <p>Description N/A</p>
             }</div>
-            {isHome && (
+            {!isHome && (
               <ul className="suggest-edits">
                 {suggestions.map(s => <li></li>)}
                 <li>

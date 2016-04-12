@@ -73,9 +73,9 @@ router.post('/:uuid/score/:score', ensureAuth, (req, res, next) => {
     node_id = req.params.uuid,
     user_id = req.user.id,
     deleted;
-  if (node_id === 'home') {
+  if (node_id === 'home')
     return next({code: 400, message: "Nice try."});
-  }
+
   async.waterfall([
     cb => db.Vote.findOne({where: {user_id, node_id}}).then(found => {
       // Already voted
@@ -99,8 +99,14 @@ router.post('/:uuid/score/:score', ensureAuth, (req, res, next) => {
 
     // If it's been down=voted to hell, we remove it and all its children
     (results, cb) => {
-      let score = _.get(results, '[0].p.properties.score');
-      if (score > -5)
+
+      // Downvote that user, too. Too many marks and they're banned
+      db.sequelize.query(`UPDATE users SET score = score + :score WHERE id = :id`, {
+        replacements: {score, id: _.get(results, '[0].p.properties.user_id')}
+      }).then(_.noop);
+
+      let _score = _.get(results, '[0].p.properties.score');
+      if (_score > -5)
         return cb(null, results);
       deleted = true;
       neo.cypher({
