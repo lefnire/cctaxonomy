@@ -50,8 +50,7 @@ class Row extends Component {
     }
     _fetch(`/nodes/${this.state.id}/score/${delta}`, {method: "POST"})
       .then(body => {
-        if (!body)
-          return;
+        if (_.isEmpty(body)) return;
         if (body.deleted)
           return this.props.onChildDeleted(this.state.id);
         let score = body.score;
@@ -275,7 +274,7 @@ class Sidebar extends Component {
                       "Suggested edits" not currently supported, <a href="https://github.com/lefnire/cctaxonomy/issues/1" target="_blank">express interest here</a>.
                     </Alert>
                   ) : (
-                    <a onClick={()=> this.setState({suggest: !showSuggest})}>Suggest Edits</a>
+                    <a onClick={()=> this.setState({showSuggest: !showSuggest})}>Suggest Edits</a>
                   )}
                 </li>
               </ul>

@@ -46,7 +46,7 @@ Node.belongsTo(User);
 
 // Controls only one vote per person
 let Vote = sequelize.define('votes', {
-  score: {type: Sequelize.INTEGER, allowNull: true, min: -1, max: 1},
+  score: {type: Sequelize.INTEGER, allowNull: true, min: -1, max: 1, defaultValue: 1},
 }, {
   indexes: [{unique: true, fields: ['id', 'user_id']}]
 });
