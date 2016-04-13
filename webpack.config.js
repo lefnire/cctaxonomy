@@ -19,6 +19,7 @@ module.exports = {
       { test: /\.css$/, loader: "style!css" }, // "style-loader!css-loader?importLoaders=1"
       { test: /\.(png|woff|woff2|eot|ttf|svg)$/, loader:  'url-loader' }, //'url-loader?limit=100000'
       { test: /\.scss$/, loaders: ["style", "css", "sass"]},
+      {test: /\.json$/, loader: 'json'},
       {
         exclude: /node_modules/,
         loader: StringReplacePlugin.replace({

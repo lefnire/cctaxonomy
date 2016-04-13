@@ -22,7 +22,7 @@ export function login(body) {
 
 export function logout() {
   localStorage.clear();
-  window.location = '/';
+  location.reload();
 }
 
 export let loggedIn = () => !!jwt;

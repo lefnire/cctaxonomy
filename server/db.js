@@ -35,7 +35,7 @@ passportLocalSequelize.attachToUser(User, {
 // http://stackoverflow.com/questions/34125090/reverse-aggregation-inside-of-common-table-expression
 let Node = sequelize.define('nodes', {
   name: {type: Sequelize.STRING, allowNull: false},
-  description: Sequelize.STRING,
+  description: Sequelize.TEXT,
   score: {type: Sequelize.INTEGER, allowNull: false, defaultValue: 1},
   deleted: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false}
 });

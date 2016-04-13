@@ -16,6 +16,7 @@ import {
   Alert,
   Modal
 } from 'react-bootstrap';
+import ReactMarkdown from 'react-markdown';
 
 let app;
 
@@ -278,13 +279,13 @@ class Sidebar extends Component {
           </div>
         ) : (
           <div>
-            <h4>{isHome ? 'CC-Taxonomy' : name}</h4>
-            <div>{description ? <p>{description}</p>
+            <h4>{isHome ? 'Creative Commons Taxonomy' : name}</h4>
+            <div>{description ?  <ReactMarkdown source={description} />
               : isHome ? (
                 <div>
-                  <p>{`A project for building lists of things to be used in developer projects (Creative Commons). Think of those times you need data: locations (countries to cities), professional industries and their skills, insurance companies and their plans, etc. Sourcing these data across the internet lands you gobs of CSVs & XLSXs; JSON, SOAP< REST and non-REST APIs (some costing an arm and a leg!); copy-pasta from Wikipedia... it's horrible. They're lists of data in the public domain, c'mon.`}</p>
-                  <p>{`With CC-Taxonomy, anyone can add a list (say "JavaScript Frameworks" and all its children). The community can add items, vote on items (aka relevant / appropriate), comment, and suggest edits. Most importantly, at any time you can download any list's latest in various formats (JSON implemented, CSV & YAML pending).`}</p>
-                  <p>If it's something you're interested in, make an appearance - it's <a href="https://github.com/lefnire/cctaxonomy" target="_blank">open source</a>, and could use help!</p>
+                  <p>A project for building lists of things to be used in developer projects. Think of those times you need data: countries to cities, professional industries and their skills, insurance companies and their plans. Sourcing data across the internet lands you gobs of CSVs; JSON & XML APIs (some costing an arm and a leg!); copy-pasta from Wikipedia...</p>
+                  <p>With CC-Taxonomy, anyone can add a list (say <em>JS Frameworks</em> and its children). The community can add items, vote on items (aka relevant / appropriate), comment, and suggest edits. Importantly, you can download any list's latest in <a href="https://github.com/lefnire/cctaxonomy/issues/3" target="_blank">various formats</a></p>
+                  <p>If interested, make an appearance: <a href="https://github.com/lefnire/cctaxonomy" target="_blank">fork the repo</a> and <a href="https://news.ycombinator.com/item?id=11488734" target="_blank">upvote on HN</a>!</p>
                   <hr/>
                   <p>
                     <small>Interface inspired by <a href="https://workflowy.com" target="_blank">Workflowy</a>; check them out, they rock.</small>
