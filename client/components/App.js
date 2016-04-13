@@ -13,7 +13,8 @@ import {
   MenuItem,
   Glyphicon,
   Input,
-  Alert
+  Alert,
+  Modal
 } from 'react-bootstrap';
 
 let app;
@@ -28,6 +29,33 @@ const xform = (node, parent) => {
   if (/*!parent*/ node.id === 1) hash['home'] = node;
   node.children.forEach(child => xform(child, node));
   return node;
+};
+
+let warningShown = localStorage.getItem('warningShown');
+class VoteWarning extends React.Component {
+  constructor() {
+    super();
+    this.state = {show: false};
+  }
+  close = () => {
+    this.setState({show: false});
+    setTimeout(() => localStorage.setItem('warningShown', true));
+    warningShown = true;
+  };
+  open = () => this.setState({show: true});
+
+  render() {
+    return (
+      <Modal modal={true} show={this.state.show} onHide={this.close}>
+        <Modal.Body>
+          <p>Careful with downvotes; they're meant for <b>inappropriate</b> content. (eg, some punk kid added <em>penis</em>; or <em>Iceland</em> is inside <em>USA</em>). When a tag gets sufficiently downvoted, it and its children disappear. It's a moderation tool rather than a liking tool.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={this.close}>Got it</Button>
+        </Modal.Footer>
+      </Modal>
+    );
+  }
 };
 
 class Row extends Component {
@@ -48,6 +76,8 @@ class Row extends Component {
     if (!loggedIn()) {
       return app.setState({error: "You must be logged in to vote"});
     }
+    if (delta < 0 && !warningShown)
+      return app.refs.voteWarning.open();
     _fetch(`/nodes/${this.state.id}/score/${delta}`, {method: "POST"})
       .then(body => {
         if (_.isEmpty(body)) return;
@@ -252,10 +282,8 @@ class Sidebar extends Component {
             <div>{description ? <p>{description}</p>
               : isHome ? (
                 <div>
-                  <p>A project for building lists of things to be used in developer projects (Creative Commons). Think of those times you need data: locations (countries to cities), professional industries and their skills, insurance companies and their plans, etc. Sourcing these data across the internet lands you gobs of CSVs & XLSXs; JSON, SOAP, XML APIs (some costing an arm and a leg!); copy-pasta from Wikipedia... it's horrible. They're data in the public domain, c'mon.</p>
-                  <p>
-                    With CC-Taxonomy, anyone can add a list (say "JavaScript Frameworks" and children). The community can add items, vote on items (aka relevant / appropriate), comment, and suggest edits. Most importantly, at any time you can download any list's latest in various formats (JSON implemented, CSV & YAML pending).
-                  </p>
+                  <p>{`A project for building lists of things to be used in developer projects (Creative Commons). Think of those times you need data: locations (countries to cities), professional industries and their skills, insurance companies and their plans, etc. Sourcing these data across the internet lands you gobs of CSVs & XLSXs; JSON, SOAP< REST and non-REST APIs (some costing an arm and a leg!); copy-pasta from Wikipedia... it's horrible. They're lists of data in the public domain, c'mon.`}</p>
+                  <p>{`With CC-Taxonomy, anyone can add a list (say "JavaScript Frameworks" and all its children). The community can add items, vote on items (aka relevant / appropriate), comment, and suggest edits. Most importantly, at any time you can download any list's latest in various formats (JSON implemented, CSV & YAML pending).`}</p>
                   <p>If it's something you're interested in, make an appearance - it's <a href="https://github.com/lefnire/cctaxonomy" target="_blank">open source</a>, and could use help!</p>
                   <hr/>
                   <p>
@@ -408,6 +436,8 @@ export default class App extends Component {
             <Sidebar row={drill} key={drill.id} />
           </div>
         </div>
+
+        <VoteWarning ref="voteWarning" />
 
         {/*<a href="https://github.com/lefnire/cctaxonomy" target="_blank"><img style={{position: 'absolute', top: 0, left: 0, border: 0}} src="https://camo.githubusercontent.com/c6625ac1f3ee0a12250227cf83ce904423abf351/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_left_gray_6d6d6d.png" /></a>*/}
       </div>

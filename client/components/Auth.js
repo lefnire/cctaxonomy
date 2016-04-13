@@ -63,8 +63,13 @@ class Register extends Component {
 
   submit = e => {
     e.preventDefault();
+    if (this.state.loading) return;
+    this.setState({loading: true});
     _fetch('/register', {method: 'POST', body: this.state})
-      .then(this.props.onLogin).catch(error => this.setState({error}));
+      .then(body => {
+        this.setState({loading: false});
+        this.props.onLogin(body);
+      }).catch(error => this.setState({error, loading: false}));
   };
 
   render() {
@@ -89,7 +94,7 @@ class Register extends Component {
           placeholder="Confirm Password"
           onChange={e => this.setState({confirmPassword: e.target.value})}
         />
-        <Button type="submit" >Submit</Button>
+        <Button type="submit" disabled={this.state.loading}>Submit</Button>
       </form>
     );
   }
@@ -103,8 +108,13 @@ class Login extends Component {
 
   submit = e => {
     e.preventDefault();
+    if (this.state.loading) return;
+    this.setState({loading: true});
     _fetch('/login', {method: "POST", body: this.state})
-      .then(this.props.onLogin).catch(error => this.setState({error}));
+      .then(body => {
+        this.setState({loading: false});
+        this.props.onLogin(body);
+      }).catch(error => this.setState({error, loading: false}));
   };
 
   render(){
@@ -123,7 +133,7 @@ class Login extends Component {
           placeholder="Password"
           onChange={e => this.setState({password: e.target.value})}
         />
-        <Button type="submit" >Submit</Button>
+        <Button type="submit" disabled={this.state.loading}>Submit</Button>
       </form>
     );
   }

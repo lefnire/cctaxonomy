@@ -39,7 +39,8 @@ const buildTree = (nodes, comments, root_id) => {
     let parent = _cache[n.node_id];
     if (parent) {
       parent.children.push(n);
-      parent.children.sort((a,b) => b.created_at - a.created_at);
+      // sort first by score DESC; then by created_at DESC
+      parent.children.sort((a,b) => b.score === a.score? b.created_at - a.created_at : b.score - a.score);
     } else {
       root = n; //root ? _.concat(root, n) : n;
     }
@@ -141,7 +142,7 @@ router.get('/download/:id.json', (req, res, next) => {
   }).catch(next);
 });
 
-router.post('/:id/comment', ensureAuth, (req, res, next) => {
+router.post('/:id/comment', ensureAuth, bust, (req, res, next) => {
   db.Comment.create({
     node_id: req.params.id,
     user_id: req.user.id,
@@ -149,7 +150,7 @@ router.post('/:id/comment', ensureAuth, (req, res, next) => {
   }).then(created => res.json(created)).catch(next);
 });
 
-router.put('/:id', ensureAuth, (req, res, next) => {
+router.put('/:id', ensureAuth, bust, (req, res, next) => {
   if (!req.body.name)
     return next({code: 400, message: "Name required"});
   db.Node.update(req.body, {
