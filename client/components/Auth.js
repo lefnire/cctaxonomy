@@ -7,7 +7,7 @@ import {
   Tab,
 } from 'react-bootstrap';
 import fetch from 'isomorphic-fetch';
-export const SERVER = 'http://localhost:3000'; //"<nconf:urls:server>";
+export const SERVER = "<nconf:server>";
 
 // ----- Helper bits ------
 let [jwt, uid] = [localStorage.getItem('jwt'), localStorage.getItem('uid')];

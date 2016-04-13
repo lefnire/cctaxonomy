@@ -214,8 +214,8 @@ class Sidebar extends Component {
       id, name, description, user_id, comments, // from row
       comment, showSuggest // local state
     } = this.state;
-    let mine = +user_id === userId();
-    let isHome = this.props.row === hash['home'];
+    let mine = user_id && +user_id === userId();
+    let isHome = id === 1;
     let suggestions = []; // TODO
     return (
       <div className="well" style={{position:'relative'}}>
@@ -252,9 +252,9 @@ class Sidebar extends Component {
             <div>{description ? <p>{description}</p>
               : isHome ? (
                 <div>
-                  <p>A project for building lists of things to be used in developer projects (Creative Commons). Think of those times you need data: locations (countries to cities), professional industries and their skills, insurance companies and their plans, etc. Sourcing these data across the internet lands you gobs of CSVs & XLSXs; REST and non-REST APIs (some costing an arm and a leg!); copy-pasta from Wikipedia... it's horrible. They're lists of data in the public domain, c'mon.</p>
+                  <p>A project for building lists of things to be used in developer projects (Creative Commons). Think of those times you need data: locations (countries to cities), professional industries and their skills, insurance companies and their plans, etc. Sourcing these data across the internet lands you gobs of CSVs & XLSXs; JSON, SOAP, XML APIs (some costing an arm and a leg!); copy-pasta from Wikipedia... it's horrible. They're data in the public domain, c'mon.</p>
                   <p>
-                    With CC-Taxonomy, anyone can add a list (say "JavaScript Frameworks" and all its children). The community can add items, vote on items (aka relevant / appropriate), comment, and suggest edits. Most importantly, at any time you can download any list's latest in various formats (JSON implemented, CSV & YAML pending).
+                    With CC-Taxonomy, anyone can add a list (say "JavaScript Frameworks" and children). The community can add items, vote on items (aka relevant / appropriate), comment, and suggest edits. Most importantly, at any time you can download any list's latest in various formats (JSON implemented, CSV & YAML pending).
                   </p>
                   <p>If it's something you're interested in, make an appearance - it's <a href="https://github.com/lefnire/cctaxonomy" target="_blank">open source</a>, and could use help!</p>
                   <hr/>
