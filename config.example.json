@@ -1,7 +1,6 @@
 {
   "PORT": 3000,
   "secret": "secret",
-  "neo4j": "http://neo4j:password@localhost:7474",
   "server": {
     "production": "https://cctaxonomy.herokuapp.com",
     "development": "http://localhost:3000"
