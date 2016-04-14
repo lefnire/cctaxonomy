@@ -335,12 +335,13 @@ class Sidebar extends Component {
 export default class App extends Component {
   constructor() {
     super();
-    this.state = {};
+    this.state = {loading: true};
     app = this;
   }
 
   componentWillMount() {
     _fetch('/nodes').then(body => {
+      this.setState({loading: false});
       this.root = xform(body);
       this.drill();
     }).catch(onErr);
@@ -387,8 +388,17 @@ export default class App extends Component {
   }
 
   render() {
-    let {drill} = this.state;
-    if (!drill) return null;
+    let {drill, loading} = this.state;
+
+    if (loading || !drill) {
+      return (
+        <div>
+          <Modal modal={true} backdrop={true} animation={false} show={true}>
+            <Modal.Body><h4>Waking server, one moment...</h4></Modal.Body>
+          </Modal>
+        </div>
+      );
+    }
 
     let {parent} = drill;
     let breadCrumbs = [];
